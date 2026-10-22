@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:puvi/core/theme/app_colors.dart';
+import 'package:puvi/features/auth/login_screen.dart';
 import 'package:puvi/features/home/presentation/main_nav_screen.dart';
 import 'package:puvi/main.dart';
 
 void main() {
   testWidgets(
-    'PuviApp launches with compact LoginScreen and navigates to MainNavScreen',
+    'PuviApp complete flow: Login, Main Navigation, Account Screen and Sign Out',
     (WidgetTester tester) async {
       await tester.pumpWidget(const PuviApp());
       await tester.pumpAndSettle();
@@ -41,22 +42,33 @@ void main() {
       expect(find.text('Gallery'), findsOneWidget);
       expect(find.text('Account'), findsOneWidget);
 
-      // 6. Test tab switching
-      await tester.tap(find.text('Timeline'));
-      await tester.pumpAndSettle();
-      expect(find.text('Milestones & Chapters'), findsOneWidget);
-
-      await tester.tap(find.text('Gallery'));
-      await tester.pumpAndSettle();
-      expect(find.text('Our Shared Frames'), findsOneWidget);
-
+      // 6. Test Account tab with user & partner data
       await tester.tap(find.text('Account'));
       await tester.pumpAndSettle();
-      expect(find.text('Couple Profile'), findsOneWidget);
 
-      await tester.tap(find.text('Home'));
+      // Verify Account Screen elements
+      expect(find.text('Profile & Settings'), findsOneWidget);
+      expect(find.text('April 11, 2026'), findsOneWidget);
+      expect(find.text('Connected & In Sync'), findsOneWidget);
+      expect(find.text('App Lock'), findsOneWidget);
+      expect(find.text('Love Notifications'), findsOneWidget);
+      expect(find.text('Sign Out'), findsOneWidget);
+
+      // 7. Test Logout confirmation dialog
+      await tester.ensureVisible(find.text('Sign Out'));
       await tester.pumpAndSettle();
-      expect(find.text('Our sanctuary is ready'), findsOneWidget);
+      await tester.tap(find.text('Sign Out'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sign out of Puvi?'), findsOneWidget);
+      expect(find.text('Stay'), findsOneWidget);
+
+      // Confirm sign out in dialog
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Sign Out'));
+      await tester.pumpAndSettle();
+
+      // Verify we returned to LoginScreen
+      expect(find.byType(LoginScreen), findsOneWidget);
     },
   );
 }
