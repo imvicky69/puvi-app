@@ -1,16 +1,18 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/widgets.dart' show WidgetsBinding;
+import 'package:path_provider/path_provider.dart';
 import 'gallery_item.dart';
 
 enum GalleryFilter { all, photos, videos, favorites }
 
-/// Repository responsible for paginated, on-demand loading of gallery memories.
+/// Repository responsible for paginated loading and editable persistence of gallery memories.
 class GalleryRepository {
   List<GalleryItem> _allItems = [];
   bool _isInitialized = false;
 
-  /// Loads and caches all items into memory once, then serves paginated queries.
+  /// Loads base items from assets/gallery.json, merges persistent overrides, and caches.
   Future<void> initialize() async {
     if (_isInitialized) return;
 
@@ -23,9 +25,38 @@ class GalleryRepository {
             .toList();
       }
     } catch (_) {
-      // Graceful fallback: return empty or sample items if asset is unavailable
       _allItems = [];
     }
+
+    // Merge persistent user overrides (custom titles, locations, dates)
+    try {
+      final isTesting =
+          WidgetsBinding.instance.runtimeType.toString().contains('Test');
+      if (!isTesting) {
+        final dir = await getApplicationDocumentsDirectory();
+        final file = File('${dir.path}/gallery_overrides.json');
+        if (await file.exists()) {
+          final content = await file.readAsString();
+          final dynamic overrides = json.decode(content);
+          if (overrides is Map<String, dynamic>) {
+            for (int i = 0; i < _allItems.length; i++) {
+              final id = _allItems[i].id;
+              if (overrides.containsKey(id)) {
+                final o = overrides[id] as Map<String, dynamic>;
+                _allItems[i] = _allItems[i].copyWith(
+                  title: o['title'] as String?,
+                  location: o['location'] as String?,
+                  takenAt: o['takenAt'] != null
+                      ? DateTime.tryParse(o['takenAt'] as String)
+                      : null,
+                  isFavorite: o['isFavorite'] as bool?,
+                );
+              }
+            }
+          }
+        }
+      }
+    } catch (_) {}
 
     // Sort chronologically newest first
     _allItems.sort((a, b) => b.takenAt.compareTo(a.takenAt));
@@ -70,7 +101,7 @@ class GalleryRepository {
     }
 
     final endIndex = (startIndex + pageSize).clamp(0, filtered.length);
-    
+
     // Simulate slight natural async fetch for smooth dynamic loading (skipped during tests)
     final isTesting =
         WidgetsBinding.instance.runtimeType.toString().contains('Test');
@@ -81,12 +112,39 @@ class GalleryRepository {
     return filtered.sublist(startIndex, endIndex);
   }
 
-  /// Toggles favorite state of an item
-  void toggleFavorite(String id) {
+  /// Updates an item in memory and persists the modification to local storage.
+  Future<void> updateItem(GalleryItem updated) async {
+    final index = _allItems.indexWhere((item) => item.id == updated.id);
+    if (index != -1) {
+      _allItems[index] = updated;
+
+      try {
+        final isTesting =
+            WidgetsBinding.instance.runtimeType.toString().contains('Test');
+        if (!isTesting) {
+          final dir = await getApplicationDocumentsDirectory();
+          final file = File('${dir.path}/gallery_overrides.json');
+          Map<String, dynamic> overrides = {};
+          if (await file.exists()) {
+            try {
+              overrides = Map<String, dynamic>.from(
+                json.decode(await file.readAsString()) as Map,
+              );
+            } catch (_) {}
+          }
+          overrides[updated.id] = updated.toJson();
+          await file.writeAsString(json.encode(overrides));
+        }
+      } catch (_) {}
+    }
+  }
+
+  /// Toggles favorite state of an item and persists it.
+  Future<void> toggleFavorite(String id) async {
     final index = _allItems.indexWhere((item) => item.id == id);
     if (index != -1) {
       final current = _allItems[index];
-      _allItems[index] = current.copyWith(isFavorite: !current.isFavorite);
+      await updateItem(current.copyWith(isFavorite: !current.isFavorite));
     }
   }
 }

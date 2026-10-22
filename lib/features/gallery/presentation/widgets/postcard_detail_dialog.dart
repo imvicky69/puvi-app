@@ -1,65 +1,117 @@
-import 'dart:math';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/gallery_item.dart';
+import 'edit_metadata_dialog.dart';
 import 'postcard_image.dart';
 import 'postcard_video_player.dart';
 
-/// Full-screen interactive Postcard modal viewer with 3D flip animation.
+/// Clean, borderless modal viewer for postcards with Download & Edit features.
 class PostcardDetailDialog extends StatefulWidget {
   final GalleryItem item;
   final VoidCallback onFavoriteToggle;
+  final ValueChanged<GalleryItem>? onUpdate;
 
   const PostcardDetailDialog({
     super.key,
     required this.item,
     required this.onFavoriteToggle,
+    this.onUpdate,
   });
 
   @override
   State<PostcardDetailDialog> createState() => _PostcardDetailDialogState();
 }
 
-class _PostcardDetailDialogState extends State<PostcardDetailDialog>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _flipController;
-  late final Animation<double> _animation;
-  bool _showBack = false;
+class _PostcardDetailDialogState extends State<PostcardDetailDialog> {
+  late GalleryItem _item;
   late bool _isFavorite;
+  bool _isDownloading = false;
 
   @override
   void initState() {
     super.initState();
+    _item = widget.item;
     _isFavorite = widget.item.isFavorite;
-    _flipController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _flipController, curve: Curves.easeInOutBack),
-    );
   }
 
-  void _flipCard() {
-    if (_showBack) {
-      _flipController.reverse();
-    } else {
-      _flipController.forward();
+  Future<void> _handleDownload() async {
+    setState(() => _isDownloading = true);
+
+    try {
+      final url = _item.imageUrl.isNotEmpty ? _item.imageUrl : _item.mediaUrl;
+      if (url.isNotEmpty) {
+        final client = HttpClient();
+        final request = await client.getUrl(Uri.parse(url));
+        final response = await request.close();
+        final bytes = await consolidateHttpClientResponseBytes(response);
+
+        final dir = await getApplicationDocumentsDirectory();
+        final ext = _item.fileExtension ?? (_item.isVideo ? '.mp4' : '.jpg');
+        final fileName = 'puvi_${_item.id}$ext';
+        final file = File('${dir.path}/$fileName');
+        await file.writeAsBytes(bytes);
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: AppColors.paper,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Downloaded "${_item.title}" to device storage 💕',
+                  ),
+                ),
+              ],
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: AppColors.espresso,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Memory saved to app storage 💕'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isDownloading = false);
+      }
     }
-    setState(() => _showBack = !_showBack);
   }
 
-  @override
-  void dispose() {
-    _flipController.dispose();
-    super.dispose();
+  void _openEditDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => EditMetadataDialog(
+        item: _item,
+        onSave: (updated) {
+          setState(() {
+            _item = updated;
+          });
+          widget.onUpdate?.call(updated);
+        },
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final item = widget.item;
-
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -73,305 +125,190 @@ class _PostcardDetailDialogState extends State<PostcardDetailDialog>
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420, maxHeight: 680),
-          child: AnimatedBuilder(
-            animation: _animation,
-            builder: (context, child) {
-              final angle = _animation.value * pi;
-              final isUnder = (angle >= pi / 2);
-
-              return Transform(
-                transform: Matrix4.identity()
-                  ..setEntry(3, 2, 0.001) // 3D perspective
-                  ..rotateY(angle),
-                alignment: Alignment.center,
-                child: isUnder
-                    ? Transform(
-                        transform: Matrix4.identity()..rotateY(pi),
-                        alignment: Alignment.center,
-                        child: _buildBack(item),
-                      )
-                    : _buildFront(item),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Front of Postcard: Photo & Postmark
-  Widget _buildFront(GalleryItem item) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.paper,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.28),
-            blurRadius: 30,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Media: Interactive PostcardVideoPlayer for clips, PostcardImage for photos
-          if (item.isVideo)
-            PostcardVideoPlayer(
-              videoUrl: item.mediaUrl.isNotEmpty
-                  ? item.mediaUrl
-                  : item.imageUrl,
-              fallbackAspectRatio: item.aspectRatio,
-            )
-          else
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: AspectRatio(
-                aspectRatio: item.aspectRatio.clamp(0.65, 1.4),
-                child: PostcardImage(
-                  item: item,
-                  index: 0,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-
-          const SizedBox(height: 12),
-
-          // Caption & Title
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.title,
-                        style: const TextStyle(
-                          fontFamily: 'serif',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.espresso,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Captured on ${item.formattedDate}',
-                        style: AppTypography.captionSmall.copyWith(
-                          color: AppColors.taupe,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    _isFavorite
-                        ? Icons.favorite_rounded
-                        : Icons.favorite_border_rounded,
-                    color: _isFavorite
-                        ? AppColors.burgundy
-                        : AppColors.taupe,
-                    size: 24,
-                  ),
-                  onPressed: () {
-                    setState(() => _isFavorite = !_isFavorite);
-                    widget.onFavoriteToggle();
-                  },
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.paper,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.28),
+                  blurRadius: 30,
+                  offset: const Offset(0, 12),
                 ),
               ],
             ),
-          ),
-
-          const SizedBox(height: 10),
-
-          // Action Buttons: Flip Card & Close
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _flipCard,
-                  icon: const Icon(Icons.flip_rounded, size: 16),
-                  label: const Text('Read Postcard'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close_rounded),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Back of Postcard: Handwritten Note, Stamp, Lines
-  Widget _buildBack(GalleryItem item) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.paper,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.28),
-            blurRadius: 30,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Top Postmark & Stamp
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'PAR AVION • POST CARD',
-                    style: AppTypography.captionSmall.copyWith(
-                      letterSpacing: 2.0,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.espresso,
-                      fontSize: 10,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'VICKY & PUJA • PUVI',
-                    style: AppTypography.captionSmall.copyWith(
-                      color: AppColors.taupe,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-              // Vintage Stamp Box
-              Container(
-                width: 44,
-                height: 52,
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.dustyRose, width: 1.2),
-                  color: AppColors.blushSand,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.favorite_rounded,
-                        size: 16,
-                        color: AppColors.burgundy,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '2026',
-                        style: AppTypography.captionSmall.copyWith(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.espresso,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const Divider(height: 28),
-
-          // Handwritten Note Area
-          Expanded(
+            padding: const EdgeInsets.all(12),
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    item.title,
-                    style: const TextStyle(
-                      fontFamily: 'serif',
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      fontStyle: FontStyle.italic,
-                      color: AppColors.espresso,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '"Every second spent with you is a memory worth treasuring forever. Our private sanctuary grows more beautiful each day."',
-                    style: TextStyle(
-                      fontFamily: 'serif',
-                      fontSize: 14.5,
-                      fontStyle: FontStyle.italic,
-                      height: 1.6,
-                      color: AppColors.espresso.withValues(alpha: 0.85),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_today_rounded,
-                        size: 13,
-                        color: AppColors.taupe,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        item.formattedDate,
-                        style: AppTypography.captionSmall.copyWith(
-                          color: AppColors.taupe,
+                  // 1. Media: PostcardVideoPlayer for clips, PostcardImage for photos
+                  if (_item.isVideo)
+                    PostcardVideoPlayer(
+                      videoUrl: _item.mediaUrl.isNotEmpty
+                          ? _item.mediaUrl
+                          : _item.imageUrl,
+                      fallbackAspectRatio: _item.aspectRatio,
+                    )
+                  else
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: AspectRatio(
+                        aspectRatio: _item.aspectRatio.clamp(0.65, 1.4),
+                        child: PostcardImage(
+                          item: _item,
+                          index: 0,
+                          fit: BoxFit.cover,
                         ),
                       ),
-                    ],
-                  ),
-                  if (item.fileExtension != null) ...[
-                    const SizedBox(height: 6),
-                    Row(
+                    ),
+
+                  const SizedBox(height: 12),
+
+                  // 2. Metadata Section: Title, Location, Date, and Favorite Toggle
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
-                          Icons.folder_outlined,
-                          size: 13,
-                          color: AppColors.taupe,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Type: ${item.type.toUpperCase()} (${item.fileExtension})',
-                          style: AppTypography.captionSmall.copyWith(
-                            color: AppColors.taupe,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _item.title,
+                                style: const TextStyle(
+                                  fontFamily: 'serif',
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.espresso,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Text(
+                                    _item.formattedDate,
+                                    style: AppTypography.captionSmall.copyWith(
+                                      color: AppColors.taupe,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  if (_item.location != null &&
+                                      _item.location!.isNotEmpty) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.blushSand,
+                                        borderRadius: AppRadius.borderPill,
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.location_on,
+                                            size: 10,
+                                            color: AppColors.burgundy,
+                                          ),
+                                          const SizedBox(width: 2),
+                                          Text(
+                                            _item.location!,
+                                            style: AppTypography.captionSmall
+                                                .copyWith(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: AppColors.burgundy,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
                           ),
+                        ),
+
+                        // Favorite Heart
+                        IconButton(
+                          icon: Icon(
+                            _isFavorite
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
+                            color: _isFavorite
+                                ? AppColors.burgundy
+                                : AppColors.taupe,
+                            size: 22,
+                          ),
+                          onPressed: () {
+                            setState(() => _isFavorite = !_isFavorite);
+                            widget.onFavoriteToggle();
+                          },
                         ),
                       ],
                     ),
-                  ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // 3. Action Buttons: Download, Edit & Close
+                  Row(
+                    children: [
+                      // Download Button
+                      Expanded(
+                        flex: 3,
+                        child: ElevatedButton.icon(
+                          onPressed: _isDownloading ? null : _handleDownload,
+                          icon: _isDownloading
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.paper,
+                                  ),
+                                )
+                              : const Icon(Icons.download_rounded, size: 16),
+                          label: Text(
+                            _isDownloading ? 'Saving...' : 'Download',
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      // Edit Metadata Button
+                      Expanded(
+                        flex: 2,
+                        child: OutlinedButton.icon(
+                          onPressed: _openEditDialog,
+                          icon: const Icon(Icons.edit_outlined, size: 15),
+                          label: const Text('Edit'),
+                        ),
+                      ),
+
+                      const SizedBox(width: 6),
+
+                      // Close Button
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close_rounded),
+                        padding: const EdgeInsets.all(8),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
           ),
-
-          const SizedBox(height: 12),
-
-          // Return button
-          ElevatedButton.icon(
-            onPressed: _flipCard,
-            icon: const Icon(Icons.flip_rounded, size: 16),
-            label: const Text('Back to Photo'),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -84,6 +84,8 @@ class GalleryItem {
   GalleryItem copyWith({
     bool? isFavorite,
     String? title,
+    String? location,
+    DateTime? takenAt,
     double? aspectRatio,
   }) {
     return GalleryItem(
@@ -96,14 +98,25 @@ class GalleryItem {
       type: type,
       isVideo: isVideo,
       createdAt: createdAt,
-      takenAt: takenAt,
+      takenAt: takenAt ?? this.takenAt,
       coupleId: coupleId,
       isFavorite: isFavorite ?? this.isFavorite,
       album: album,
-      location: location,
+      location: location ?? this.location,
       fileExtension: fileExtension,
       aspectRatio: aspectRatio ?? this.aspectRatio,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'location': location,
+      'takenAt': takenAt.toIso8601String(),
+      'isFavorite': isFavorite,
+      'aspectRatio': aspectRatio,
+    };
   }
 
   /// Formatted date string for the postcard stamp (e.g. "May 25, 2026")

@@ -131,6 +131,15 @@ class _GalleryTabState extends State<GalleryTab> {
             }
           });
         },
+        onUpdate: (updatedItem) {
+          setState(() {
+            _repository.updateItem(updatedItem);
+            final idx = _items.indexWhere((i) => i.id == updatedItem.id);
+            if (idx != -1) {
+              _items[idx] = updatedItem;
+            }
+          });
+        },
       ),
     );
   }
