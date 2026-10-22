@@ -81,11 +81,11 @@ class _PostcardCardState extends State<PostcardCard> {
               // 1. Photo Frame with Postage Stamp Badge
               Stack(
                 children: [
-                  // Photo / Video with PostcardImage
+                  // Photo / Video with PostcardImage dynamically sized to actual aspect ratio
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: AspectRatio(
-                      aspectRatio: 1.05,
+                      aspectRatio: item.aspectRatio.clamp(0.60, 1.35),
                       child: PostcardImage(
                         item: item,
                         index: widget.index,

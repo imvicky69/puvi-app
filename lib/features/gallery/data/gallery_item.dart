@@ -15,6 +15,7 @@ class GalleryItem {
   final String album;
   final String? location;
   final String? fileExtension;
+  final double aspectRatio;
 
   const GalleryItem({
     required this.id,
@@ -32,6 +33,7 @@ class GalleryItem {
     this.album = 'All',
     this.location,
     this.fileExtension,
+    this.aspectRatio = 0.75,
   });
 
   factory GalleryItem.fromJson(Map<String, dynamic> json) {
@@ -75,12 +77,14 @@ class GalleryItem {
       album: json['album'] as String? ?? 'All',
       location: json['location'] as String?,
       fileExtension: json['fileExtension'] as String?,
+      aspectRatio: (json['aspectRatio'] as num?)?.toDouble() ?? (isVid ? 0.75 : 0.8),
     );
   }
 
   GalleryItem copyWith({
     bool? isFavorite,
     String? title,
+    double? aspectRatio,
   }) {
     return GalleryItem(
       id: id,
@@ -98,6 +102,7 @@ class GalleryItem {
       album: album,
       location: location,
       fileExtension: fileExtension,
+      aspectRatio: aspectRatio ?? this.aspectRatio,
     );
   }
 

@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/gallery_item.dart';
 import 'postcard_image.dart';
+import 'postcard_video_player.dart';
 
 /// Full-screen interactive Postcard modal viewer with 3D flip animation.
 class PostcardDetailDialog extends StatefulWidget {
@@ -61,10 +62,17 @@ class _PostcardDetailDialogState extends State<PostcardDetailDialog>
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(24)),
+        side: BorderSide.none,
+      ),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420, maxHeight: 600),
+          constraints: const BoxConstraints(maxWidth: 420, maxHeight: 680),
           child: AnimatedBuilder(
             animation: _animation,
             builder: (context, child) {
@@ -97,12 +105,11 @@ class _PostcardDetailDialogState extends State<PostcardDetailDialog>
       decoration: BoxDecoration(
         color: AppColors.paper,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
+            color: Colors.black.withValues(alpha: 0.28),
             blurRadius: 30,
-            offset: const Offset(0, 15),
+            offset: const Offset(0, 12),
           ),
         ],
       ),
@@ -111,18 +118,26 @@ class _PostcardDetailDialogState extends State<PostcardDetailDialog>
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Image / Video container with PostcardImage
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: AspectRatio(
-              aspectRatio: 1.0,
-              child: PostcardImage(
-                item: item,
-                index: 0,
-                fit: BoxFit.cover,
+          // Media: Interactive PostcardVideoPlayer for clips, PostcardImage for photos
+          if (item.isVideo)
+            PostcardVideoPlayer(
+              videoUrl: item.mediaUrl.isNotEmpty
+                  ? item.mediaUrl
+                  : item.imageUrl,
+              fallbackAspectRatio: item.aspectRatio,
+            )
+          else
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: AspectRatio(
+                aspectRatio: item.aspectRatio.clamp(0.65, 1.4),
+                child: PostcardImage(
+                  item: item,
+                  index: 0,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
-          ),
 
           const SizedBox(height: 12),
 
@@ -204,12 +219,11 @@ class _PostcardDetailDialogState extends State<PostcardDetailDialog>
       decoration: BoxDecoration(
         color: AppColors.paper,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
+            color: Colors.black.withValues(alpha: 0.28),
             blurRadius: 30,
-            offset: const Offset(0, 15),
+            offset: const Offset(0, 12),
           ),
         ],
       ),
