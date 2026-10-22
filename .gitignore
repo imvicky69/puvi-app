@@ -16,6 +16,7 @@ serviceAccountKey.json
 *serviceAccount*.json
 users.json
 old_app_data.json
+screenshot*.png
 *.env
 *.env.*
 *.keystore

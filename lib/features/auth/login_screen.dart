@@ -4,13 +4,10 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 
-/// Minimal, warm, and intimate Login Screen for Puvi.
+/// Compact, minimal, and intimate Login Screen for Puvi.
 ///
-/// Features:
-/// - Clean transparent logo badge with a warm medallion aesthetic.
-/// - Romantic editorial typography (Cormorant Garamond + Caveat).
-/// - Intuitive, tactile form inputs with validation and password reveal toggle.
-/// - Standalone "Sign in with Google" entry ready for OAuth account syncing.
+/// Designed to be clean, distraction-free, and comfortably fit
+/// on any mobile screen without overwhelming content.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -39,7 +36,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    // Simulated graceful sign-in entry
     await Future.delayed(const Duration(milliseconds: 600));
 
     if (!mounted) return;
@@ -48,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Welcome home, ${_emailController.text.split('@').first} ✨',
+          'Welcome home ✨',
           style: AppTypography.bodyMedium.copyWith(color: AppColors.paper),
         ),
         backgroundColor: AppColors.espresso,
@@ -70,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
             AppSpacing.horizontalSm,
             Expanded(
               child: Text(
-                'Google Sign-In ready. Syncing with your account soon!',
+                'Google Sign-In ready to sync with your account.',
                 style: AppTypography.bodyMedium.copyWith(
                   color: AppColors.paper,
                 ),
@@ -86,8 +82,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       backgroundColor: AppColors.ivory,
       body: SafeArea(
@@ -96,34 +90,34 @@ class _LoginScreenState extends State<LoginScreen> {
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.lg,
-              vertical: AppSpacing.md,
+              vertical: AppSpacing.sm,
             ),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
+              constraints: const BoxConstraints(maxWidth: 380),
               child: Form(
                 key: _formKey,
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // --- Header: Medallion Logo & Cute Romantic Salutation ---
+                    // --- Minimal Brand Header ---
                     Center(
                       child: Container(
-                        width: 96,
-                        height: 96,
-                        padding: const EdgeInsets.all(AppSpacing.md),
+                        width: 72,
+                        height: 72,
+                        padding: const EdgeInsets.all(AppSpacing.sm),
                         decoration: BoxDecoration(
                           color: AppColors.paper,
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: AppColors.border,
-                            width: 1.5,
+                            width: 1.2,
                           ),
                           boxShadow: [
                             BoxShadow(
                               color: AppColors.espresso.withValues(alpha: 0.04),
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
@@ -142,46 +136,22 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
 
-                    AppSpacing.verticalLg,
+                    AppSpacing.verticalSm,
 
-                    // Cute Handwritten Intimate Greeting
-                    Center(
-                      child: Text(
-                        'our private corner',
-                        style: AppTypography.handwrittenNote.copyWith(
-                          fontSize: 22,
-                          color: AppColors.burgundy,
-                        ),
-                      ),
-                    ),
-
-                    // App Editorial Title
+                    // Clean, single-line title
                     Center(
                       child: Text(
                         'Puvi',
-                        style: theme.textTheme.displayLarge?.copyWith(
-                          fontSize: 38,
-                          color: AppColors.espresso,
+                        style: AppTypography.display.copyWith(
+                          fontSize: 32,
                           letterSpacing: -0.5,
                         ),
                       ),
                     ),
 
-                    AppSpacing.verticalXxs,
+                    AppSpacing.verticalLg,
 
-                    // Subtitle
-                    Center(
-                      child: Text(
-                        'Step in to cherish our memories.',
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.taupe,
-                        ),
-                      ),
-                    ),
-
-                    AppSpacing.verticalXl,
-
-                    // --- Form Card ---
+                    // --- Compact Form Card ---
                     Card(
                       elevation: 0,
                       color: AppColors.paper,
@@ -191,74 +161,72 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg,
-                          vertical: AppSpacing.xl,
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.lg,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Email Label & Field
-                            Text(
-                              'Email Address',
-                              style: AppTypography.label.copyWith(
-                                color: AppColors.espresso,
-                                fontSize: 13,
-                              ),
-                            ),
-                            AppSpacing.verticalXs,
+                            // Email Input (clean hint, no external redundant label)
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
                               autocorrect: false,
                               style: AppTypography.bodyLarge.copyWith(
                                 color: AppColors.espresso,
+                                fontSize: 14,
                               ),
                               decoration: InputDecoration(
-                                hintText: 'puja@puvi.com or vicky@puvi.com',
+                                hintText: 'Email',
                                 hintStyle: AppTypography.bodyMedium.copyWith(
-                                  color: AppColors.taupe.withValues(alpha: 0.7),
-                                  fontSize: 13,
+                                  color: AppColors.taupe.withValues(alpha: 0.8),
+                                  fontSize: 14,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 14,
                                 ),
                                 prefixIcon: const Icon(
                                   Icons.mail_outline_rounded,
                                   color: AppColors.taupe,
-                                  size: 20,
+                                  size: 19,
                                 ),
                               ),
                               validator: (val) {
                                 if (val == null || val.trim().isEmpty) {
-                                  return 'Please enter your email';
+                                  return 'Enter your email';
                                 }
                                 if (!val.contains('@') || !val.contains('.')) {
-                                  return 'Please enter a valid email';
+                                  return 'Enter a valid email';
                                 }
                                 return null;
                               },
                             ),
 
-                            AppSpacing.verticalLg,
+                            AppSpacing.verticalMd,
 
-                            // Password Label & Field
-                            Text(
-                              'Secret Passcode',
-                              style: AppTypography.label.copyWith(
-                                color: AppColors.espresso,
-                                fontSize: 13,
-                              ),
-                            ),
-                            AppSpacing.verticalXs,
+                            // Password Input (clean hint, no external redundant label)
                             TextFormField(
                               controller: _passwordController,
                               obscureText: _obscurePassword,
                               style: AppTypography.bodyLarge.copyWith(
                                 color: AppColors.espresso,
+                                fontSize: 14,
                               ),
                               decoration: InputDecoration(
-                                hintText: '••••••••',
+                                hintText: 'Passcode',
+                                hintStyle: AppTypography.bodyMedium.copyWith(
+                                  color: AppColors.taupe.withValues(alpha: 0.8),
+                                  fontSize: 14,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 14,
+                                ),
                                 prefixIcon: const Icon(
                                   Icons.lock_outline_rounded,
                                   color: AppColors.taupe,
-                                  size: 20,
+                                  size: 19,
                                 ),
                                 suffixIcon: IconButton(
                                   icon: Icon(
@@ -266,7 +234,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ? Icons.visibility_outlined
                                         : Icons.visibility_off_outlined,
                                     color: AppColors.taupe,
-                                    size: 20,
+                                    size: 19,
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -277,10 +245,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               validator: (val) {
                                 if (val == null || val.isEmpty) {
-                                  return 'Please enter your passcode';
+                                  return 'Enter your passcode';
                                 }
                                 if (val.length < 4) {
-                                  return 'Passcode is at least 4 characters';
+                                  return 'Passcode is at least 4 digits';
                                 }
                                 return null;
                               },
@@ -288,7 +256,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                             AppSpacing.verticalSm,
 
-                            // Remember Me & Forgot Passcode
+                            // Compact Remember Me & Forgot Row
                             Row(
                               children: [
                                 Expanded(
@@ -302,8 +270,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         SizedBox(
-                                          width: 20,
-                                          height: 20,
+                                          width: 18,
+                                          height: 18,
                                           child: Checkbox(
                                             value: _rememberMe,
                                             activeColor: AppColors.burgundy,
@@ -317,7 +285,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                             ),
                                             side: const BorderSide(
                                               color: AppColors.taupe,
-                                              width: 1.5,
+                                              width: 1.4,
                                             ),
                                             onChanged: (val) {
                                               setState(() {
@@ -334,7 +302,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                             style: AppTypography.caption
                                                 .copyWith(
                                                   color: AppColors.espresso,
-                                                  fontSize: 13,
+                                                  fontSize: 12,
                                                 ),
                                           ),
                                         ),
@@ -347,7 +315,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text(
-                                          'Hint: Check your companion for the passcode 💕',
+                                          'Hint: Check with your partner 💕',
                                         ),
                                         duration: Duration(seconds: 2),
                                       ),
@@ -360,7 +328,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         MaterialTapTargetSize.shrinkWrap,
                                   ),
                                   child: Text(
-                                    'Forgot passcode?',
+                                    'Forgot?',
                                     style: AppTypography.caption.copyWith(
                                       color: AppColors.burgundy,
                                       fontWeight: FontWeight.w600,
@@ -371,11 +339,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               ],
                             ),
 
-                            AppSpacing.verticalLg,
+                            AppSpacing.verticalMd,
 
                             // Primary Sign In Button
                             SizedBox(
-                              height: 50,
+                              height: 48,
                               child: ElevatedButton(
                                 onPressed: _isLoading ? null : _handleSignIn,
                                 style: ElevatedButton.styleFrom(
@@ -388,8 +356,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 child: _isLoading
                                     ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
+                                        width: 18,
+                                        height: 18,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
                                           valueColor:
@@ -406,14 +374,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                             'Sign In',
                                             style: AppTypography.label.copyWith(
                                               color: AppColors.paper,
-                                              fontSize: 15,
+                                              fontSize: 14,
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
                                           AppSpacing.horizontalXs,
                                           const Icon(
                                             Icons.arrow_forward_rounded,
-                                            size: 18,
+                                            size: 16,
                                             color: AppColors.paper,
                                           ),
                                         ],
@@ -421,7 +389,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
 
-                            AppSpacing.verticalLg,
+                            AppSpacing.verticalSm,
 
                             // Subtle Divider
                             Row(
@@ -429,12 +397,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 const Expanded(child: Divider()),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.md,
+                                    horizontal: AppSpacing.sm,
                                   ),
                                   child: Text(
                                     'or',
                                     style: AppTypography.caption.copyWith(
                                       color: AppColors.taupe,
+                                      fontSize: 11,
                                     ),
                                   ),
                                 ),
@@ -442,11 +411,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               ],
                             ),
 
-                            AppSpacing.verticalLg,
+                            AppSpacing.verticalSm,
 
                             // Sign in with Google Button
                             SizedBox(
-                              height: 50,
+                              height: 48,
                               child: OutlinedButton(
                                 onPressed: _handleGoogleSignIn,
                                 style: OutlinedButton.styleFrom(
@@ -454,7 +423,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   foregroundColor: AppColors.espresso,
                                   side: const BorderSide(
                                     color: AppColors.border,
-                                    width: 1.2,
+                                    width: 1.1,
                                   ),
                                   shape: const RoundedRectangleBorder(
                                     borderRadius: AppRadius.borderButton,
@@ -469,7 +438,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       'Sign in with Google',
                                       style: AppTypography.label.copyWith(
                                         color: AppColors.espresso,
-                                        fontSize: 14,
+                                        fontSize: 13,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -482,37 +451,35 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
 
-                    AppSpacing.verticalLg,
+                    AppSpacing.verticalSm,
 
-                    // Cute Footer Note
+                    // Tiny Minimal Love Note
                     Center(
                       child: Wrap(
                         alignment: WrapAlignment.center,
                         crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: AppSpacing.xs,
+                        spacing: 4,
                         children: [
                           const Icon(
                             Icons.favorite_rounded,
-                            size: 14,
+                            size: 11,
                             color: AppColors.dustyRose,
                           ),
                           Text(
-                            'made for each other, always',
+                            'a private space for two',
                             style: AppTypography.handwrittenCaption.copyWith(
-                              fontSize: 15,
+                              fontSize: 14,
                               color: AppColors.taupe,
                             ),
                           ),
                           const Icon(
                             Icons.favorite_rounded,
-                            size: 14,
+                            size: 11,
                             color: AppColors.dustyRose,
                           ),
                         ],
                       ),
                     ),
-
-                    AppSpacing.verticalMd,
                   ],
                 ),
               ),
@@ -530,7 +497,7 @@ class _GoogleIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(size: const Size(20, 20), painter: _GoogleLogoPainter());
+    return CustomPaint(size: const Size(18, 18), painter: _GoogleLogoPainter());
   }
 }
 

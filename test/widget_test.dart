@@ -4,21 +4,19 @@ import 'package:puvi/core/theme/app_colors.dart';
 import 'package:puvi/main.dart';
 
 void main() {
-  testWidgets('PuviApp launches with Love Letters LoginScreen', (
+  testWidgets('PuviApp launches with compact Love Letters LoginScreen', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const PuviApp());
     await tester.pumpAndSettle();
 
-    // Verify application title and cute greeting
+    // Verify application title
     expect(find.text('Puvi'), findsOneWidget);
-    expect(find.text('our private corner'), findsOneWidget);
-    expect(find.text('Step in to cherish our memories.'), findsOneWidget);
 
     // Verify input fields are present
     expect(find.byType(TextFormField), findsNWidgets(2));
-    expect(find.text('Email Address'), findsOneWidget);
-    expect(find.text('Secret Passcode'), findsOneWidget);
+    expect(find.text('Email'), findsOneWidget);
+    expect(find.text('Passcode'), findsOneWidget);
 
     // Verify Sign In and Google Sign In buttons are present
     expect(find.text('Sign In'), findsOneWidget);
