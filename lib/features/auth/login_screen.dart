@@ -3,6 +3,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../home/presentation/main_nav_screen.dart';
 
 /// Compact, minimal, and intimate Login Screen for Puvi.
 ///
@@ -37,46 +38,19 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     await Future.delayed(const Duration(milliseconds: 600));
-
     if (!mounted) return;
-    setState(() => _isLoading = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Welcome home ✨',
-          style: AppTypography.bodyMedium.copyWith(color: AppColors.paper),
-        ),
-        backgroundColor: AppColors.espresso,
-        behavior: SnackBarBehavior.floating,
-      ),
+    final enteredEmail = _emailController.text.trim().toLowerCase();
+    final displayName = enteredEmail.contains('puja') ? 'Puja' : 'Vicky';
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => MainNavScreen(userName: displayName)),
     );
   }
 
   void _handleGoogleSignIn() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(
-              Icons.info_outline,
-              color: AppColors.dustyRose,
-              size: 20,
-            ),
-            AppSpacing.horizontalSm,
-            Expanded(
-              child: Text(
-                'Google Sign-In ready to sync with your account.',
-                style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.paper,
-                ),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: AppColors.espresso,
-        behavior: SnackBarBehavior.floating,
-      ),
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const MainNavScreen(userName: 'Vicky')),
     );
   }
 

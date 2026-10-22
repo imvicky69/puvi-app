@@ -120,13 +120,24 @@ lib/
 │       └── app_theme.dart        # Global Material 3 light ThemeData
 ├── features/
 │   ├── auth/
-│   │   └── login_screen.dart     # Love letters entry screen (Email + Google)
-│   ├── home/                     # (Upcoming) Main navigation & dashboard
-│   ├── timeline/                 # (Upcoming) Milestones & memory log
-│   ├── gallery/                  # (Upcoming) Photo albums & full screen viewer
-│   ├── chat/                     # (Upcoming) Private couple chat & pings
-│   └── profile/                  # (Upcoming) Anniversary, pins & settings
-└── main.dart                     # App entry point & Firebase initialization
+│   │   └── login_screen.dart            # Compact Love Letters entry screen (Email + Google)
+│   ├── home/
+│   │   └── presentation/
+│   │       ├── main_nav_screen.dart     # Main shell holding bottom navigation & tabs
+│   │       ├── home_tab.dart            # Home tab with header & empty canvas
+│   │       └── widgets/
+│   │           ├── home_header.dart     # Logo, time-based greeting, user name & chat icon
+│   │           └── puvi_bottom_nav_bar.dart # Aesthetic pill bottom nav bar (4 tabs)
+│   ├── timeline/
+│   │   └── presentation/
+│   │       └── timeline_tab.dart        # Timeline milestones tab
+│   ├── gallery/
+│   │   └── presentation/
+│   │       └── gallery_tab.dart         # Photos & memories gallery tab
+│   └── account/
+│   │   └── presentation/
+│   │       └── account_tab.dart         # Couple profile & settings tab
+└── main.dart                            # App entry point & Firebase initialization
 ```
 
 ---
