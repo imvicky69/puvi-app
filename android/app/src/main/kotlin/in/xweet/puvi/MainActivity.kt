@@ -1,4 +1,4 @@
-package in.xweet.puvi
+package `in`.xweet.puvi
 
 import io.flutter.embedding.android.FlutterActivity
 

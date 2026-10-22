@@ -6,6 +6,8 @@ import 'core/theme/app_spacing.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_typography.dart';
 
+import 'features/auth/login_screen.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
@@ -26,7 +28,7 @@ class PuviApp extends StatelessWidget {
       title: 'Puvi',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: const PuviPlaceholderScreen(),
+      home: const LoginScreen(),
     );
   }
 }

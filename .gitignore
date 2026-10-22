@@ -13,6 +13,18 @@
 migrate_working_dir/
 google-services.json
 serviceAccountKey.json
+*serviceAccount*.json
+users.json
+old_app_data.json
+*.env
+*.env.*
+*.keystore
+*.jks
+key.properties
+local.properties
+android/.gradle/
+.gradle/
+node_modules/
 
 # IntelliJ related
 *.iml
