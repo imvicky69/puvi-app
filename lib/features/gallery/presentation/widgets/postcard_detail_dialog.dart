@@ -1,9 +1,9 @@
 import 'dart:math';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/gallery_item.dart';
+import 'postcard_image.dart';
 
 /// Full-screen interactive Postcard modal viewer with 3D flip animation.
 class PostcardDetailDialog extends StatefulWidget {
@@ -111,53 +111,15 @@ class _PostcardDetailDialogState extends State<PostcardDetailDialog>
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Image / Video container
+          // Image / Video container with PostcardImage
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: AspectRatio(
               aspectRatio: 1.0,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  CachedNetworkImage(
-                    imageUrl: item.imageUrl.isNotEmpty
-                        ? item.imageUrl
-                        : item.mediaUrl,
-                    fit: BoxFit.cover,
-                    memCacheWidth: 800,
-                    memCacheHeight: 800,
-                    placeholder: (context, url) => Container(
-                      color: AppColors.blushSand,
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.burgundy,
-                        ),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: AppColors.blushSand,
-                      child: Image.asset('assets/puvi-1.jpeg', fit: BoxFit.cover),
-                    ),
-                  ),
-
-                  // Video overlay indicator
-                  if (item.isVideo)
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.6),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.play_arrow_rounded,
-                          size: 36,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                ],
+              child: PostcardImage(
+                item: item,
+                index: 0,
+                fit: BoxFit.cover,
               ),
             ),
           ),

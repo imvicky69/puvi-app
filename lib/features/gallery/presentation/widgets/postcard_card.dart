@@ -1,9 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/gallery_item.dart';
+import 'postcard_image.dart';
 
 /// A romantic vintage postcard card representing a couple memory.
 ///
@@ -81,45 +81,15 @@ class _PostcardCardState extends State<PostcardCard> {
               // 1. Photo Frame with Postage Stamp Badge
               Stack(
                 children: [
-                  // Photo with CachedNetworkImage
+                  // Photo / Video with PostcardImage
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: AspectRatio(
                       aspectRatio: 1.05,
-                      child: CachedNetworkImage(
-                        imageUrl: item.imageUrl.isNotEmpty
-                            ? item.imageUrl
-                            : item.mediaUrl,
+                      child: PostcardImage(
+                        item: item,
+                        index: widget.index,
                         fit: BoxFit.cover,
-                        memCacheWidth: 500,
-                        memCacheHeight: 650,
-                        fadeInDuration: const Duration(milliseconds: 300),
-                        placeholder: (context, url) => Container(
-                          color: AppColors.blushSand.withValues(alpha: 0.6),
-                          child: Center(
-                            child: SizedBox(
-                              width: 28,
-                              height: 28,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppColors.dustyRose.withValues(alpha: 0.8),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          color: AppColors.blushSand,
-                          child: Center(
-                            child: Image.asset(
-                              (widget.index % 2 == 0)
-                                  ? 'assets/puvi-1.jpeg'
-                                  : 'assets/puvi-2.jpeg',
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
                       ),
                     ),
                   ),
