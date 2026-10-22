@@ -36,6 +36,20 @@ void main() {
       expect(find.text('Vicky'), findsOneWidget);
       expect(find.byIcon(Icons.chat_bubble_outline_rounded), findsOneWidget);
 
+      // Verify Dynamic Hero Card and Romantic Actions
+      expect(find.text('LOVE BIRDS'), findsOneWidget);
+      expect(find.text('Send Love'), findsOneWidget);
+      expect(find.text('Love Whisper'), findsOneWidget);
+
+      // Test Love Whisper modal
+      await tester.ensureVisible(find.text('Love Whisper'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Love Whisper'));
+      await tester.pumpAndSettle();
+      expect(find.text('Today\'s Love Note'), findsOneWidget);
+      await tester.tap(find.text('Close Whisper'));
+      await tester.pumpAndSettle();
+
       // 5. Verify the 4 bottom navigation items exist
       expect(find.text('Home'), findsOneWidget);
       expect(find.text('Timeline'), findsOneWidget);

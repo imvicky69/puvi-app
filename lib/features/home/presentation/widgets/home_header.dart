@@ -38,31 +38,16 @@ class HomeHeader extends StatelessWidget {
       color: AppColors.ivory,
       child: Row(
         children: [
-          // Brand Logo Medallion
-          Container(
-            width: 44,
-            height: 44,
-            padding: const EdgeInsets.all(AppSpacing.xs),
-            decoration: BoxDecoration(
-              color: AppColors.paper,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.border, width: 1.2),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.espresso.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/logo_transparent.png',
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Image.asset('assets/logo.png', fit: BoxFit.contain);
-                },
-              ),
+          // Clean Brand Logo (no wrapper padding or circular box)
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: Image.asset(
+              'assets/logo_transparent.png',
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return Image.asset('assets/logo.png', fit: BoxFit.contain);
+              },
             ),
           ),
 
