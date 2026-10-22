@@ -1,0 +1,113 @@
+/// Domain model representing a single memory in the Puvi Gallery.
+class GalleryItem {
+  final String id;
+  final String imageUrl;
+  final String mediaUrl;
+  final String thumbnailUrl;
+  final String storagePath;
+  final String title;
+  final String type; // 'image' | 'video'
+  final bool isVideo;
+  final DateTime createdAt;
+  final DateTime takenAt;
+  final String coupleId;
+  final bool isFavorite;
+  final String album;
+  final String? location;
+  final String? fileExtension;
+
+  const GalleryItem({
+    required this.id,
+    required this.imageUrl,
+    required this.mediaUrl,
+    required this.thumbnailUrl,
+    required this.storagePath,
+    required this.title,
+    required this.type,
+    required this.isVideo,
+    required this.createdAt,
+    required this.takenAt,
+    this.coupleId = 'puvi_couple',
+    this.isFavorite = false,
+    this.album = 'All',
+    this.location,
+    this.fileExtension,
+  });
+
+  factory GalleryItem.fromJson(Map<String, dynamic> json) {
+    final rawType = (json['type'] as String?)?.toLowerCase() ?? 'image';
+    final isVid = json['isVideo'] == true ||
+        rawType == 'video' ||
+        (json['storagePath'] as String? ?? '').endsWith('.mp4') ||
+        (json['storagePath'] as String? ?? '').endsWith('.mov');
+
+    final rawCreatedAt = json['createdAt'];
+    DateTime createdDate = DateTime.now();
+    if (rawCreatedAt is String) {
+      createdDate = DateTime.tryParse(rawCreatedAt) ?? DateTime.now();
+    }
+
+    final rawTakenAt = json['takenAt'];
+    DateTime takenDate = createdDate;
+    if (rawTakenAt is String) {
+      takenDate = DateTime.tryParse(rawTakenAt) ?? createdDate;
+    }
+
+    final imgUrl = json['imageUrl'] as String? ?? '';
+    final medUrl = json['mediaUrl'] as String? ?? imgUrl;
+    final thumbUrl = json['thumbnailUrl'] as String? ?? imgUrl;
+
+    return GalleryItem(
+      id: json['_id'] as String? ?? json['id'] as String? ?? '',
+      imageUrl: imgUrl,
+      mediaUrl: medUrl,
+      thumbnailUrl: thumbUrl,
+      storagePath: json['storagePath'] as String? ?? '',
+      title: (json['title'] as String?)?.trim().isNotEmpty == true
+          ? (json['title'] as String).trim()
+          : 'Our memory',
+      type: isVid ? 'video' : 'image',
+      isVideo: isVid,
+      createdAt: createdDate,
+      takenAt: takenDate,
+      coupleId: json['coupleId'] as String? ?? 'puvi_couple',
+      isFavorite: json['isFavorite'] == true,
+      album: json['album'] as String? ?? 'All',
+      location: json['location'] as String?,
+      fileExtension: json['fileExtension'] as String?,
+    );
+  }
+
+  GalleryItem copyWith({
+    bool? isFavorite,
+    String? title,
+  }) {
+    return GalleryItem(
+      id: id,
+      imageUrl: imageUrl,
+      mediaUrl: mediaUrl,
+      thumbnailUrl: thumbnailUrl,
+      storagePath: storagePath,
+      title: title ?? this.title,
+      type: type,
+      isVideo: isVideo,
+      createdAt: createdAt,
+      takenAt: takenAt,
+      coupleId: coupleId,
+      isFavorite: isFavorite ?? this.isFavorite,
+      album: album,
+      location: location,
+      fileExtension: fileExtension,
+    );
+  }
+
+  /// Formatted date string for the postcard stamp (e.g. "May 25, 2026")
+  String get formattedDate {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    final m = months[takenAt.month - 1];
+    return '$m ${takenAt.day}, ${takenAt.year}';
+  }
+}

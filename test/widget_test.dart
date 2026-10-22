@@ -56,7 +56,15 @@ void main() {
       expect(find.text('Gallery'), findsOneWidget);
       expect(find.text('Account'), findsOneWidget);
 
-      // 6. Test Account tab with user & partner data
+      // 6. Test Gallery tab with postcard layout and filters
+      await tester.tap(find.text('Gallery'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cherished Postcards • Vicky & Puja'), findsOneWidget);
+      expect(find.textContaining('All ('), findsOneWidget);
+      expect(find.textContaining('Photos ('), findsOneWidget);
+
+      // 7. Test Account tab with user & partner data
       await tester.tap(find.text('Account'));
       await tester.pumpAndSettle();
 

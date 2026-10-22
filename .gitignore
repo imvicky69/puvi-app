@@ -17,6 +17,7 @@ serviceAccountKey.json
 users.json
 old_app_data.json
 gallery_refined.json
+assets/gallery.json
 screenshot*.png
 *.env
 *.env.*
