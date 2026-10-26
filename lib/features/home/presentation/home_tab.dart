@@ -53,7 +53,9 @@ class _HomeTabState extends State<HomeTab> {
           decoration: const BoxDecoration(
             color: AppColors.paper,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border(top: BorderSide(color: AppColors.border, width: 1.5)),
+            border: Border(
+              top: BorderSide(color: AppColors.border, width: 1.5),
+            ),
           ),
           child: SafeArea(
             top: false,

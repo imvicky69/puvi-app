@@ -39,6 +39,9 @@ dependencies:
   cached_network_image: ^3.4.1
   video_player: ^2.11.1
   path_provider: ^2.1.6
+  gal: ^2.3.3
+  image_picker: ^1.2.4
+  exif: ^3.3.0
 
 dev_dependencies:
   flutter_test:

@@ -38,7 +38,8 @@ class GalleryItem {
 
   factory GalleryItem.fromJson(Map<String, dynamic> json) {
     final rawType = (json['type'] as String?)?.toLowerCase() ?? 'image';
-    final isVid = json['isVideo'] == true ||
+    final isVid =
+        json['isVideo'] == true ||
         rawType == 'video' ||
         (json['storagePath'] as String? ?? '').endsWith('.mp4') ||
         (json['storagePath'] as String? ?? '').endsWith('.mov');
@@ -77,7 +78,8 @@ class GalleryItem {
       album: json['album'] as String? ?? 'All',
       location: json['location'] as String?,
       fileExtension: json['fileExtension'] as String?,
-      aspectRatio: (json['aspectRatio'] as num?)?.toDouble() ?? (isVid ? 0.75 : 0.8),
+      aspectRatio:
+          (json['aspectRatio'] as num?)?.toDouble() ?? (isVid ? 0.75 : 0.8),
     );
   }
 
@@ -119,11 +121,43 @@ class GalleryItem {
     };
   }
 
+  /// Full JSON serialization including media paths for persistent storage of user uploads.
+  Map<String, dynamic> toFullJson() {
+    return {
+      '_id': id,
+      'imageUrl': imageUrl,
+      'mediaUrl': mediaUrl,
+      'thumbnailUrl': thumbnailUrl,
+      'storagePath': storagePath,
+      'title': title,
+      'type': type,
+      'isVideo': isVideo,
+      'createdAt': createdAt.toIso8601String(),
+      'takenAt': takenAt.toIso8601String(),
+      'coupleId': coupleId,
+      'isFavorite': isFavorite,
+      'album': album,
+      'location': location,
+      'fileExtension': fileExtension,
+      'aspectRatio': aspectRatio,
+    };
+  }
+
   /// Formatted date string for the postcard stamp (e.g. "May 25, 2026")
   String get formattedDate {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final m = months[takenAt.month - 1];
     return '$m ${takenAt.day}, ${takenAt.year}';

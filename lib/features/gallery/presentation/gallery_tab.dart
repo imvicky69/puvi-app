@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../data/gallery_item.dart';
 import '../data/gallery_repository.dart';
+import '../data/image_upload_processor.dart';
 import 'widgets/gallery_filter_bar.dart';
+import 'widgets/gallery_fullscreen_viewer.dart';
 import 'widgets/postcard_card.dart';
-import 'widgets/postcard_detail_dialog.dart';
+import 'widgets/upload_photos_dialog.dart';
 
 /// The full-featured, paginated Postcard Gallery screen.
 ///
@@ -114,34 +117,240 @@ class _GalleryTabState extends State<GalleryTab> {
     _loadInitialData();
   }
 
-  void _openPostcardDetail(GalleryItem item) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.7),
-      builder: (context) => PostcardDetailDialog(
-        item: item,
-        onFavoriteToggle: () {
-          setState(() {
-            _repository.toggleFavorite(item.id);
-            final idx = _items.indexWhere((i) => i.id == item.id);
-            if (idx != -1) {
-              _items[idx] = _items[idx].copyWith(
-                isFavorite: !_items[idx].isFavorite,
-              );
-            }
-          });
-        },
-        onUpdate: (updatedItem) {
-          setState(() {
-            _repository.updateItem(updatedItem);
-            final idx = _items.indexWhere((i) => i.id == updatedItem.id);
-            if (idx != -1) {
-              _items[idx] = updatedItem;
-            }
-          });
+  void _openFullscreenViewer(int index) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            GalleryFullscreenViewer(
+              items: _items,
+              initialIndex: index,
+              onUpdate: (updatedItem) {
+                setState(() {
+                  _repository.updateItem(updatedItem);
+                  final idx = _items.indexWhere((i) => i.id == updatedItem.id);
+                  if (idx != -1) {
+                    _items[idx] = updatedItem;
+                  }
+                });
+              },
+            ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
         },
       ),
     );
+  }
+
+  void _showUploadSourceSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.paper,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.favorite_rounded,
+                    color: AppColors.burgundy,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Add Couple Memories',
+                    style: AppTypography.h3.copyWith(
+                      color: AppColors.espresso,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Upload single or batch photos with auto-detected dates 💕',
+                style: AppTypography.captionSmall.copyWith(
+                  color: AppColors.taupe,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.blushSand,
+                    borderRadius: AppRadius.borderPill,
+                  ),
+                  child: const Icon(
+                    Icons.photo_library_rounded,
+                    color: AppColors.burgundy,
+                    size: 20,
+                  ),
+                ),
+                title: Text(
+                  'Choose from Phone Gallery (Batch)',
+                  style: AppTypography.label.copyWith(
+                    color: AppColors.espresso,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  'Select multiple photos with auto-detected dates',
+                  style: AppTypography.captionSmall.copyWith(
+                    color: AppColors.taupe,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndUploadPhotos(fromCamera: false);
+                },
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.blushSand,
+                    borderRadius: AppRadius.borderPill,
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt_rounded,
+                    color: AppColors.burgundy,
+                    size: 20,
+                  ),
+                ),
+                title: Text(
+                  'Take a Photo with Camera',
+                  style: AppTypography.label.copyWith(
+                    color: AppColors.espresso,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  'Capture a new sweet moment right now',
+                  style: AppTypography.captionSmall.copyWith(
+                    color: AppColors.taupe,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndUploadPhotos(fromCamera: true);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadPhotos({bool fromCamera = false}) async {
+    try {
+      final picker = ImagePicker();
+      List<XFile> pickedFiles = [];
+
+      if (fromCamera) {
+        final photo = await picker.pickImage(source: ImageSource.camera);
+        if (photo != null) pickedFiles.add(photo);
+      } else {
+        pickedFiles = await picker.pickMultiImage();
+      }
+
+      if (pickedFiles.isEmpty || !mounted) return;
+
+      // Show processing dialog while reading EXIF dates & converting HEIC if needed
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              decoration: BoxDecoration(
+                color: AppColors.paper,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.espresso.withValues(alpha: 0.15),
+                    blurRadius: 20,
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: AppColors.burgundy,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    'Detecting dates & formats...',
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.espresso,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final List<UploadDraft> drafts = [];
+      for (final file in pickedFiles) {
+        final draft = await ImageUploadProcessor.processPickedFile(file);
+        drafts.add(draft);
+      }
+
+      if (!mounted) return;
+      Navigator.pop(context); // Close processing dialog
+
+      // Open the batch review dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => UploadPhotosDialog(
+          initialDrafts: drafts,
+          onUploaded: (newItems) async {
+            await _repository.addUploadedItems(newItems);
+            setState(() {
+              _items.insertAll(0, newItems);
+              _items.sort((a, b) => b.takenAt.compareTo(a.takenAt));
+            });
+          },
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        final message = e.toString().contains('MissingPluginException')
+            ? 'New native plugin added! Please stop the app in the terminal (press "q") and run "flutter run" to rebuild with the native image picker.'
+            : 'Could not open photos: $e';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -221,6 +430,49 @@ class _GalleryTabState extends State<GalleryTab> {
                       ],
                     ),
                   ),
+
+                  const SizedBox(width: 8),
+
+                  // Upload Button (Pill in header)
+                  GestureDetector(
+                    onTap: _showUploadSourceSheet,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 11,
+                        vertical: 5.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.burgundy,
+                        borderRadius: AppRadius.borderPill,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.burgundy.withValues(alpha: 0.25),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.add_photo_alternate_rounded,
+                            size: 13,
+                            color: AppColors.paper,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Upload',
+                            style: AppTypography.captionSmall.copyWith(
+                              color: AppColors.paper,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -247,10 +499,26 @@ class _GalleryTabState extends State<GalleryTab> {
                       ),
                     )
                   : _items.isEmpty
-                      ? _buildEmptyState()
-                      : _buildPostcardGrid(),
+                  ? _buildEmptyState()
+                  : _buildPostcardGrid(),
             ),
           ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showUploadSourceSheet,
+        backgroundColor: AppColors.burgundy,
+        foregroundColor: AppColors.paper,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.borderPill),
+        icon: const Icon(Icons.add_photo_alternate_rounded, size: 19),
+        label: Text(
+          'Upload Photos',
+          style: AppTypography.label.copyWith(
+            color: AppColors.paper,
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
         ),
       ),
     );
@@ -270,14 +538,27 @@ class _GalleryTabState extends State<GalleryTab> {
             ),
             AppSpacing.verticalMd,
             Text(
-              'No postcards found',
+              'No memories found',
               style: AppTypography.h3.copyWith(color: AppColors.espresso),
             ),
             AppSpacing.verticalXs,
             Text(
-              'Try selecting another filter or tap heart to favorite memories.',
+              'Upload couple photos or select another filter.',
               style: AppTypography.bodyMedium.copyWith(color: AppColors.taupe),
               textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 18),
+            ElevatedButton.icon(
+              onPressed: _showUploadSourceSheet,
+              icon: const Icon(Icons.add_photo_alternate_rounded, size: 16),
+              label: const Text('Upload Photos 💕'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.burgundy,
+                foregroundColor: AppColors.paper,
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppRadius.borderButton,
+                ),
+              ),
             ),
           ],
         ),
@@ -286,43 +567,42 @@ class _GalleryTabState extends State<GalleryTab> {
   }
 
   Widget _buildPostcardGrid() {
-    // Separate into two staggered columns for romantic scrapbook feel
+    // Dynamic height-balanced 2-column masonry grid for seamless visual rhythm
     final leftItems = <Widget>[];
     final rightItems = <Widget>[];
+    double leftHeight = 0;
+    double rightHeight = 0;
 
     for (int i = 0; i < _items.length; i++) {
       final item = _items[i];
+      final ar = item.aspectRatio.clamp(0.48, 2.0);
+      final hasCustomNote =
+          item.title.trim().isNotEmpty &&
+          item.title.trim().toLowerCase() != 'our memory';
+      final itemEstimatedHeight = (1.0 / ar) + (hasCustomNote ? 0.28 : 0.14);
+
       final cardWidget = Padding(
-        padding: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.only(bottom: 12),
         child: PostcardCard(
           item: item,
           index: i,
-          onTap: () => _openPostcardDetail(item),
-          onFavoriteToggle: () {
-            setState(() {
-              _repository.toggleFavorite(item.id);
-              _items[i] = _items[i].copyWith(
-                isFavorite: !_items[i].isFavorite,
-              );
-            });
-          },
+          onTap: () => _openFullscreenViewer(i),
         ),
       );
 
-      if (i % 2 == 0) {
+      if (leftHeight <= rightHeight) {
         leftItems.add(cardWidget);
+        leftHeight += itemEstimatedHeight;
       } else {
         rightItems.add(cardWidget);
+        rightHeight += itemEstimatedHeight;
       }
     }
 
     return SingleChildScrollView(
       controller: _scrollController,
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.md,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),

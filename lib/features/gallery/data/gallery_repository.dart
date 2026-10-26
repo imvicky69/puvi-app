@@ -28,10 +28,33 @@ class GalleryRepository {
       _allItems = [];
     }
 
+    // Merge persistent user uploaded memories
+    try {
+      final isTesting = WidgetsBinding.instance.runtimeType.toString().contains(
+        'Test',
+      );
+      if (!isTesting) {
+        final dir = await getApplicationDocumentsDirectory();
+        final uploadsFile = File('${dir.path}/gallery_uploads.json');
+        if (await uploadsFile.exists()) {
+          final content = await uploadsFile.readAsString();
+          final dynamic uploadsRaw = json.decode(content);
+          if (uploadsRaw is List) {
+            for (final u in uploadsRaw) {
+              if (u is Map<String, dynamic>) {
+                _allItems.add(GalleryItem.fromJson(u));
+              }
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
     // Merge persistent user overrides (custom titles, locations, dates)
     try {
-      final isTesting =
-          WidgetsBinding.instance.runtimeType.toString().contains('Test');
+      final isTesting = WidgetsBinding.instance.runtimeType.toString().contains(
+        'Test',
+      );
       if (!isTesting) {
         final dir = await getApplicationDocumentsDirectory();
         final file = File('${dir.path}/gallery_overrides.json');
@@ -103,8 +126,9 @@ class GalleryRepository {
     final endIndex = (startIndex + pageSize).clamp(0, filtered.length);
 
     // Simulate slight natural async fetch for smooth dynamic loading (skipped during tests)
-    final isTesting =
-        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    final isTesting = WidgetsBinding.instance.runtimeType.toString().contains(
+      'Test',
+    );
     if (!isTesting) {
       await Future.delayed(const Duration(milliseconds: 120));
     }
@@ -119,8 +143,9 @@ class GalleryRepository {
       _allItems[index] = updated;
 
       try {
-        final isTesting =
-            WidgetsBinding.instance.runtimeType.toString().contains('Test');
+        final isTesting = WidgetsBinding.instance.runtimeType
+            .toString()
+            .contains('Test');
         if (!isTesting) {
           final dir = await getApplicationDocumentsDirectory();
           final file = File('${dir.path}/gallery_overrides.json');
@@ -146,5 +171,40 @@ class GalleryRepository {
       final current = _allItems[index];
       await updateItem(current.copyWith(isFavorite: !current.isFavorite));
     }
+  }
+
+  /// Adds newly uploaded memories, persists them to local storage, and re-sorts.
+  Future<void> addUploadedItems(List<GalleryItem> newItems) async {
+    if (newItems.isEmpty) return;
+
+    _allItems.addAll(newItems);
+    _allItems.sort((a, b) => b.takenAt.compareTo(a.takenAt));
+
+    try {
+      final isTesting = WidgetsBinding.instance.runtimeType.toString().contains(
+        'Test',
+      );
+      if (!isTesting) {
+        final dir = await getApplicationDocumentsDirectory();
+        final uploadsFile = File('${dir.path}/gallery_uploads.json');
+        List<Map<String, dynamic>> existingUploads = [];
+        if (await uploadsFile.exists()) {
+          try {
+            final raw = json.decode(await uploadsFile.readAsString());
+            if (raw is List) {
+              existingUploads = List<Map<String, dynamic>>.from(
+                raw.whereType<Map<String, dynamic>>(),
+              );
+            }
+          } catch (_) {}
+        }
+
+        for (final item in newItems) {
+          existingUploads.add(item.toFullJson());
+        }
+
+        await uploadsFile.writeAsString(json.encode(existingUploads));
+      }
+    } catch (_) {}
   }
 }

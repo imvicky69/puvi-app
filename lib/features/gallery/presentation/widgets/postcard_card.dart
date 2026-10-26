@@ -1,294 +1,157 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/gallery_item.dart';
 import 'postcard_image.dart';
 
-/// A romantic vintage postcard card representing a couple memory.
+/// Clean, photo-centric gallery card representing a couple memory.
 ///
 /// Features:
-/// - Polaroid/postcard white margin frame with paper texture feel.
-/// - Organic subtle random rotation (-1.5° to +1.5°) for scrapbook feel.
-/// - Top-right vintage airmail postage stamp & postmark cancellation badge.
-/// - High-performance caching with memory constraints [CachedNetworkImage].
-/// - Shimmer placeholder and graceful error fallback.
+/// - True aspect-ratio preservation without aggressive cropping or distortion.
+/// - Minimalist aesthetic: pure photo, subtle date stamp, and optional custom note.
+/// - No clutter: eliminated repetitive "Our memory" titles, like buttons, and postage stamps.
 /// - Video indicator badge if [item.isVideo] is true.
-/// - Romantic editorial title, location pill, and date stamp.
-/// - Interactive favorite heart toggle.
-class PostcardCard extends StatefulWidget {
+/// - Tactile tap feedback to launch full-screen interactive viewer.
+class PostcardCard extends StatelessWidget {
   final GalleryItem item;
   final int index;
   final VoidCallback onTap;
-  final VoidCallback onFavoriteToggle;
+  final VoidCallback? onFavoriteToggle;
 
   const PostcardCard({
     super.key,
     required this.item,
     required this.index,
     required this.onTap,
-    required this.onFavoriteToggle,
+    this.onFavoriteToggle,
   });
 
   @override
-  State<PostcardCard> createState() => _PostcardCardState();
-}
-
-class _PostcardCardState extends State<PostcardCard> {
-  late final double _rotationAngle;
-
-  @override
-  void initState() {
-    super.initState();
-    // Organic gentle tilt angle between -0.02 and +0.02 radians (~ -1.2° to +1.2°)
-    final pseudoRandomSeed = (widget.index * 13) % 9;
-    _rotationAngle = (pseudoRandomSeed - 4) * 0.005;
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final item = widget.item;
-    final hasCustomTitle = item.title.isNotEmpty &&
-        item.title.toLowerCase() != 'our memory';
+    // Preserve 100% natural aspect ratios (from tall 9:16 portrait to 16:9 landscape)
+    final naturalAspectRatio = item.aspectRatio.clamp(0.48, 2.0);
 
-    return Transform.rotate(
-      angle: _rotationAngle,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.paper,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border, width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.espresso.withValues(alpha: 0.07),
-                blurRadius: 12,
-                offset: const Offset(0, 5),
-              ),
-              BoxShadow(
-                color: AppColors.espresso.withValues(alpha: 0.03),
-                blurRadius: 3,
-                offset: const Offset(0, 1),
-              ),
-            ],
+    // Only display short note if it's a genuine custom memory note (not default placeholder)
+    final hasCustomNote =
+        item.title.trim().isNotEmpty &&
+        item.title.trim().toLowerCase() != 'our memory';
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.paper,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.border.withValues(alpha: 0.8),
+            width: 1,
           ),
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // 1. Photo Frame with Postage Stamp Badge
-              Stack(
-                children: [
-                  // Photo / Video with PostcardImage dynamically sized to actual aspect ratio
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: AspectRatio(
-                      aspectRatio: item.aspectRatio.clamp(0.60, 1.35),
-                      child: PostcardImage(
-                        item: item,
-                        index: widget.index,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.espresso.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 1. Photo / Video at its true aspect ratio
+            Stack(
+              children: [
+                AspectRatio(
+                  aspectRatio: naturalAspectRatio,
+                  child: PostcardImage(
+                    item: item,
+                    index: index,
+                    fit: BoxFit.cover,
                   ),
+                ),
 
-                  // Top-Right Vintage Airmail Stamp
+                // Video Indicator Pill
+                if (item.isVideo)
                   Positioned(
-                    top: 6,
-                    right: 6,
+                    bottom: 8,
+                    left: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 3,
+                        horizontal: 7,
+                        vertical: 3.5,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.88),
-                        borderRadius: BorderRadius.circular(4),
+                        color: Colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: AppColors.dustyRose.withValues(alpha: 0.6),
-                          width: 0.8,
+                          color: Colors.white.withValues(alpha: 0.25),
+                          width: 0.7,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 4,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(
-                            Icons.favorite,
-                            size: 9,
-                            color: AppColors.burgundy,
+                            Icons.play_arrow_rounded,
+                            size: 13,
+                            color: Colors.white,
                           ),
                           const SizedBox(width: 3),
                           Text(
-                            'PUVI',
+                            'VIDEO',
                             style: AppTypography.captionSmall.copyWith(
+                              color: Colors.white,
                               fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.espresso,
-                              letterSpacing: 0.8,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.4,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
+              ],
+            ),
 
-                  // Video Indicator Badge
-                  if (item.isVideo)
-                    Positioned(
-                      bottom: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.65),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.play_arrow_rounded,
-                              size: 13,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              'CLIP',
-                              style: AppTypography.captionSmall.copyWith(
-                                color: Colors.white,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
+            // 2. Minimalist caption area: Date and optional short note ONLY
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Optional custom short note (if written by user)
+                  if (hasCustomNote) ...[
+                    Text(
+                      item.title.trim(),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodyMedium.copyWith(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.espresso,
+                        height: 1.25,
                       ),
                     ),
+                    const SizedBox(height: 3),
+                  ],
+
+                  // Subtle Date Stamp
+                  Text(
+                    item.formattedDate,
+                    style: AppTypography.captionSmall.copyWith(
+                      fontSize: 10.5,
+                      color: AppColors.taupe,
+                      letterSpacing: 0.2,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
-
-              const SizedBox(height: 8),
-
-              // 2. Postcard Metadata & Handwriting Bottom Area
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title / Caption
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            item.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontFamily: 'serif',
-                              fontSize: hasCustomTitle ? 13.5 : 12.5,
-                              fontWeight: hasCustomTitle
-                                  ? FontWeight.w700
-                                  : FontWeight.w600,
-                              fontStyle: hasCustomTitle
-                                  ? FontStyle.italic
-                                  : FontStyle.normal,
-                              color: AppColors.espresso,
-                            ),
-                          ),
-                        ),
-                        // Interactive Favorite Button
-                        GestureDetector(
-                          onTap: widget.onFavoriteToggle,
-                          behavior: HitTestBehavior.opaque,
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 4),
-                            child: Icon(
-                              item.isFavorite
-                                  ? Icons.favorite_rounded
-                                  : Icons.favorite_border_rounded,
-                              size: 17,
-                              color: item.isFavorite
-                                  ? AppColors.burgundy
-                                  : AppColors.taupe.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 3),
-
-                    // Date Stamp & Location Pill
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Postmark Date Stamp
-                        Text(
-                          item.formattedDate,
-                          style: AppTypography.captionSmall.copyWith(
-                            fontSize: 10.5,
-                            color: AppColors.taupe,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-
-                        // Location or Tag
-                        if (item.location != null &&
-                            item.location!.isNotEmpty) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.blushSand,
-                              borderRadius: AppRadius.borderPill,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.location_on,
-                                  size: 10,
-                                  color: AppColors.burgundy,
-                                ),
-                                const SizedBox(width: 2),
-                                Text(
-                                  item.location!,
-                                  style: AppTypography.captionSmall.copyWith(
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.burgundy,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

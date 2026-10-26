@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
-import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/gallery_item.dart';
 
@@ -94,8 +93,18 @@ class _EditMetadataDialogState extends State<EditMetadataDialog> {
   @override
   Widget build(BuildContext context) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final dateString =
         '${months[_selectedDate.month - 1]} ${_selectedDate.day}, ${_selectedDate.year}';
@@ -108,17 +117,16 @@ class _EditMetadataDialogState extends State<EditMetadataDialog> {
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400),
+          constraints: const BoxConstraints(maxWidth: 380),
           child: Container(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             decoration: BoxDecoration(
               color: AppColors.paper,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.border, width: 1.2),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 25,
+                  color: AppColors.espresso.withValues(alpha: 0.12),
+                  blurRadius: 28,
                   offset: const Offset(0, 10),
                 ),
               ],
@@ -129,106 +137,48 @@ class _EditMetadataDialogState extends State<EditMetadataDialog> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Header
+                  // 1. Header
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.edit_note_rounded,
-                            color: AppColors.burgundy,
-                            size: 22,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Edit Memory',
-                            style: AppTypography.h3.copyWith(
-                              fontSize: 18,
-                              color: AppColors.espresso,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'Edit Memory',
+                        style: AppTypography.h3.copyWith(
+                          fontSize: 18,
+                          color: AppColors.espresso,
+                        ),
                       ),
+                      const Spacer(),
                       IconButton(
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(Icons.close_rounded, size: 20),
+                        color: AppColors.taupe,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
+                        splashRadius: 18,
                       ),
                     ],
                   ),
 
-                  const Divider(height: 20),
+                  const SizedBox(height: 16),
 
-                  // Title Field
-                  Text(
-                    'Memory Title / Note',
-                    style: AppTypography.captionSmall.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.espresso,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: const InputDecoration(
-                      hintText: 'e.g. When we held hands by the ghats',
-                      prefixIcon: Icon(Icons.title_rounded, size: 18),
-                    ),
-                  ),
-
-                  AppSpacing.verticalMd,
-
-                  // Location Field
-                  Text(
-                    'Location / Tag',
-                    style: AppTypography.captionSmall.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.espresso,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  TextFormField(
-                    controller: _locationController,
-                    decoration: const InputDecoration(
-                      hintText: 'e.g. Varanasi, Jaipur, Rooftop',
-                      prefixIcon: Icon(Icons.location_on_outlined, size: 18),
-                    ),
-                  ),
-
-                  AppSpacing.verticalMd,
-
-                  // Date Taken Selector
-                  Text(
-                    'Date Taken',
-                    style: AppTypography.captionSmall.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.espresso,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
+                  // 2. Date Taken Pill Tile (Interactive)
                   InkWell(
                     onTap: _pickDate,
-                    borderRadius: AppRadius.borderButton,
+                    borderRadius: BorderRadius.circular(16),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.paper,
-                        borderRadius: AppRadius.borderButton,
-                        border: Border.all(color: AppColors.border, width: 1.2),
+                        color: AppColors.ivory.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: Row(
                         children: [
                           const Icon(
                             Icons.calendar_today_rounded,
-                            size: 18,
+                            size: 16,
                             color: AppColors.burgundy,
                           ),
                           const SizedBox(width: 10),
@@ -238,34 +188,133 @@ class _EditMetadataDialogState extends State<EditMetadataDialog> {
                               style: AppTypography.bodyMedium.copyWith(
                                 color: AppColors.espresso,
                                 fontWeight: FontWeight.w600,
+                                fontSize: 13.5,
                               ),
                             ),
                           ),
-                          const Icon(
-                            Icons.arrow_drop_down_rounded,
-                            color: AppColors.taupe,
+                          Text(
+                            'Change',
+                            style: AppTypography.captionSmall.copyWith(
+                              color: AppColors.burgundy,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
 
-                  AppSpacing.verticalLg,
+                  const SizedBox(height: 12),
 
-                  // Action Buttons
+                  // 3. Title / Note Field
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.ivory.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 2,
+                    ),
+                    child: TextFormField(
+                      controller: _titleController,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: AppColors.espresso,
+                        fontSize: 13.5,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Memory title / note',
+                        hintStyle: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.taupe.withValues(alpha: 0.7),
+                          fontSize: 13,
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.edit_note_rounded,
+                          size: 20,
+                          color: AppColors.taupe,
+                        ),
+                        prefixIconConstraints: const BoxConstraints(
+                          minWidth: 32,
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // 4. Location Field
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.ivory.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 2,
+                    ),
+                    child: TextFormField(
+                      controller: _locationController,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: AppColors.espresso,
+                        fontSize: 13.5,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Location (optional)',
+                        hintStyle: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.taupe.withValues(alpha: 0.7),
+                          fontSize: 13,
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.location_on_outlined,
+                          size: 18,
+                          color: AppColors.taupe,
+                        ),
+                        prefixIconConstraints: const BoxConstraints(
+                          minWidth: 32,
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  // 5. Actions (Cancel / Save)
                   Row(
                     children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          'Cancel',
+                          style: AppTypography.label.copyWith(
+                            color: AppColors.taupe,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _handleSave,
-                          child: const Text('Save Details'),
+                      const Spacer(),
+                      ElevatedButton(
+                        onPressed: _handleSave,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.burgundy,
+                          foregroundColor: AppColors.paper,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 22,
+                            vertical: 11,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadius.borderButton,
+                          ),
+                        ),
+                        child: Text(
+                          'Save Details',
+                          style: AppTypography.label.copyWith(
+                            color: AppColors.paper,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],

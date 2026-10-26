@@ -54,13 +54,6 @@ class GalleryFilterBar extends StatelessWidget {
             isSelected: activeFilter == GalleryFilter.videos,
             onTap: () => onFilterChanged(GalleryFilter.videos),
           ),
-          AppSpacing.horizontalSm,
-          _FilterChip(
-            label: 'Favorites ($favoritesCount)',
-            icon: Icons.favorite_rounded,
-            isSelected: activeFilter == GalleryFilter.favorites,
-            onTap: () => onFilterChanged(GalleryFilter.favorites),
-          ),
         ],
       ),
     );

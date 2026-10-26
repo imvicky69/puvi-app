@@ -1,11 +1,9 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/gallery_item.dart';
+import '../../data/media_download_service.dart';
 import 'edit_metadata_dialog.dart';
 import 'postcard_image.dart';
 import 'postcard_video_player.dart';
@@ -43,20 +41,10 @@ class _PostcardDetailDialogState extends State<PostcardDetailDialog> {
     setState(() => _isDownloading = true);
 
     try {
-      final url = _item.imageUrl.isNotEmpty ? _item.imageUrl : _item.mediaUrl;
-      if (url.isNotEmpty) {
-        final client = HttpClient();
-        final request = await client.getUrl(Uri.parse(url));
-        final response = await request.close();
-        final bytes = await consolidateHttpClientResponseBytes(response);
+      final result = await MediaDownloadService.downloadToGallery(_item);
+      if (!mounted) return;
 
-        final dir = await getApplicationDocumentsDirectory();
-        final ext = _item.fileExtension ?? (_item.isVideo ? '.mp4' : '.jpg');
-        final fileName = 'puvi_${_item.id}$ext';
-        final file = File('${dir.path}/$fileName');
-        await file.writeAsBytes(bytes);
-
-        if (!mounted) return;
+      if (result.status == DownloadResultStatus.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -69,25 +57,47 @@ class _PostcardDetailDialogState extends State<PostcardDetailDialog> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Downloaded "${_item.title}" to device storage 💕',
+                    'Saved to phone gallery in "Puvi" album 💕',
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.paper,
+                    ),
                   ),
                 ),
               ],
             ),
-            duration: const Duration(seconds: 2),
+            action: SnackBarAction(
+              label: 'View',
+              textColor: AppColors.dustyRose,
+              onPressed: MediaDownloadService.openPhoneGallery,
+            ),
+            duration: const Duration(seconds: 4),
             backgroundColor: AppColors.espresso,
             behavior: SnackBarBehavior.floating,
           ),
         );
+      } else if (result.status == DownloadResultStatus.permissionDenied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result.message ?? 'Permission needed to save to gallery 💕',
+              style: AppTypography.bodyMedium.copyWith(color: AppColors.paper),
+            ),
+            backgroundColor: AppColors.burgundy,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result.message ?? 'Failed to save to gallery.',
+              style: AppTypography.bodyMedium.copyWith(color: AppColors.paper),
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Memory saved to app storage 💕'),
-          duration: Duration(seconds: 2),
-        ),
-      );
     } finally {
       if (mounted) {
         setState(() => _isDownloading = false);

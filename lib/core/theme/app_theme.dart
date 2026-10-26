@@ -235,8 +235,8 @@ abstract final class AppTheme {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         shape: const RoundedRectangleBorder(
-          borderRadius: AppRadius.borderCard,
-          side: BorderSide(color: AppColors.border, width: 1),
+          borderRadius: AppRadius.borderLargeCard,
+          side: BorderSide.none,
         ),
         titleTextStyle: AppTypography.h2,
         contentTextStyle: AppTypography.bodyMedium,

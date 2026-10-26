@@ -202,7 +202,9 @@ class _PostcardVideoPlayerState extends State<PostcardVideoPlayer> {
                 height: 28,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.dustyRose),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppColors.dustyRose,
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
