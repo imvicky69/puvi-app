@@ -4,6 +4,7 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../home/presentation/main_nav_screen.dart';
+import 'data/auth_session_manager.dart';
 
 /// Compact, minimal, and intimate Login Screen for Puvi.
 ///
@@ -43,12 +44,21 @@ class _LoginScreenState extends State<LoginScreen> {
     final enteredEmail = _emailController.text.trim().toLowerCase();
     final displayName = enteredEmail.contains('puja') ? 'Puja' : 'Vicky';
 
+    if (_rememberMe) {
+      await AuthSessionManager.saveSession(
+        userName: displayName,
+        email: enteredEmail,
+      );
+    }
+
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => MainNavScreen(userName: displayName)),
     );
   }
 
   void _handleGoogleSignIn() {
+    AuthSessionManager.saveSession(userName: 'Vicky', email: 'vicky@puvi.com');
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const MainNavScreen(userName: 'Vicky')),
     );

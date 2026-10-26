@@ -6,7 +6,9 @@ import 'core/theme/app_spacing.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_typography.dart';
 
+import 'features/auth/data/auth_session_manager.dart';
 import 'features/auth/login_screen.dart';
+import 'features/home/presentation/main_nav_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,12 +17,16 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('Firebase init notice: $e');
   }
-  runApp(const PuviApp());
+
+  final initialUser = await AuthSessionManager.getSavedUser();
+  runApp(PuviApp(initialUser: initialUser));
 }
 
 /// Root application widget for Puvi.
 class PuviApp extends StatelessWidget {
-  const PuviApp({super.key});
+  final String? initialUser;
+
+  const PuviApp({super.key, this.initialUser});
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +34,9 @@ class PuviApp extends StatelessWidget {
       title: 'Puvi',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: const LoginScreen(),
+      home: initialUser != null && initialUser!.isNotEmpty
+          ? MainNavScreen(userName: initialUser!)
+          : const LoginScreen(),
     );
   }
 }

@@ -3,6 +3,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../auth/data/auth_session_manager.dart';
 import '../../../auth/login_screen.dart';
 
 /// Logout button with a themed confirmation dialog.
@@ -47,8 +48,11 @@ class LogoutButton extends StatelessWidget {
               ),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
+                await AuthSessionManager.clearSession();
+                if (!dialogContext.mounted) return;
                 Navigator.of(dialogContext).pop();
+                if (!context.mounted) return;
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (_) => const LoginScreen()),
                   (route) => false,
