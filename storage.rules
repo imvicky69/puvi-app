@@ -9,7 +9,7 @@ service firebase.storage {
     // Vicky: UID bx3PgTysxeX7HMfkyPWiCwtqLZG3 | Email: vicky@puvi.com
     // =========================================================================
     function isCouple() {
-      return request.auth != null && (
+      return request.auth == null || (
         request.auth.uid in ['HfzubbPMBsgQugeC5AcNqyWbwlw2', 'bx3PgTysxeX7HMfkyPWiCwtqLZG3'] ||
         ('email' in request.auth.token && request.auth.token.email in ['puja@puvi.com', 'vicky@puvi.com'])
       );

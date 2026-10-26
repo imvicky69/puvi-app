@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onLoveCountUpdate = exports.onNewPing = exports.onNewMessage = exports.onMoodChange = void 0;
+exports.onCoupleLedgerEntryCreated = exports.onLedgerEntryCreated = exports.onLoveCountUpdate = exports.onNewMessage = exports.onMoodChange = void 0;
 const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 admin.initializeApp();
@@ -188,57 +188,6 @@ exports.onNewMessage = functions.firestore
     }
     return null;
 });
-exports.onNewPing = functions.firestore
-    .document('pings/{pingId}')
-    .onCreate(async (snap, context) => {
-    var _a;
-    const data = snap.data();
-    const senderId = data.senderId;
-    console.log('📍 New ping created by:', senderId);
-    // Find the other user's FCM token
-    let targetToken = null;
-    let targetUserId = null;
-    try {
-        const usersSnap = await admin.firestore().collection('users').get();
-        usersSnap.forEach(doc => {
-            if (doc.id !== senderId) {
-                targetUserId = doc.id;
-                targetToken = doc.data().fcmToken;
-            }
-        });
-        if (!targetToken) {
-            console.log('❌ No target FCM token found for ping.');
-            return null;
-        }
-        // Get sender's name
-        const senderDoc = await admin.firestore().collection('users').doc(senderId).get();
-        const senderName = ((_a = senderDoc.data()) === null || _a === void 0 ? void 0 : _a.name) || 'Your partner';
-        const title = `${senderName} is thinking of you! 💕`;
-        const body = 'Tap to see the love!';
-        console.log('📨 Sending notification to', targetUserId, 'with token:', targetToken.substring(0, 20) + '...');
-        await admin.messaging().send({
-            token: targetToken,
-            notification: {
-                title,
-                body,
-            },
-            data: {
-                type: 'ping',
-                pingId: context.params.pingId,
-            },
-            webpush: {
-                notification: {
-                    icon: '/icons.svg',
-                },
-            },
-        });
-        console.log('✅ Ping notification sent successfully to', targetUserId);
-    }
-    catch (e) {
-        console.error('❌ Failed to send ping notification', e);
-    }
-    return null;
-});
 exports.onLoveCountUpdate = functions.firestore
     .document('shared/stats')
     .onUpdate(async (change, context) => {
@@ -316,5 +265,130 @@ exports.onLoveCountUpdate = functions.firestore
         console.error('Failed to send love update notification', e);
     }
     return null;
+});
+/**
+ * Common handler for couple ledger notifications.
+ * Sends push notification to partner when a shared bill, expense, or settlement is recorded.
+ */
+async function handleLedgerNotification(data, entryId) {
+    if (!data)
+        return null;
+    const paidBy = data.paidBy || 'Partner';
+    const owedBy = data.owedBy || '';
+    const totalBill = Number(data.totalBill || 0);
+    const owedAmount = Number(data.owedAmount || 0);
+    const type = data.type || 'split';
+    const splitMode = data.splitMode || 'equal';
+    const titleText = data.title || 'Shared Expense';
+    // Find partner's FCM token from users collection
+    let targetToken = null;
+    let targetUserId = null;
+    const usersSnap = await admin.firestore().collection('users').get();
+    usersSnap.forEach(doc => {
+        const userData = doc.data();
+        const userName = (userData.name || '').toLowerCase();
+        const userEmail = (userData.email || '').toLowerCase();
+        // If owedBy is defined, match it
+        if (owedBy) {
+            if (userName === owedBy.toLowerCase() || userEmail.includes(owedBy.toLowerCase())) {
+                targetUserId = doc.id;
+                targetToken = userData.fcmToken || null;
+            }
+        }
+        else {
+            // Otherwise match the partner who is not paidBy
+            if (userName !== paidBy.toLowerCase() && !userEmail.includes(paidBy.toLowerCase())) {
+                targetUserId = doc.id;
+                targetToken = userData.fcmToken || null;
+            }
+        }
+    });
+    // Fallback: If still not resolved, pick whichever user isn't paidBy and has a token
+    if (!targetToken) {
+        usersSnap.forEach(doc => {
+            const userData = doc.data();
+            const userName = (userData.name || '').toLowerCase();
+            if (userName !== paidBy.toLowerCase() && userData.fcmToken) {
+                targetUserId = doc.id;
+                targetToken = userData.fcmToken;
+            }
+        });
+    }
+    if (!targetToken) {
+        console.log('No recipient FCM token found for ledger entry:', entryId);
+        return null;
+    }
+    let notifTitle = '';
+    let notifBody = '';
+    let actionType = 'ledger';
+    const formattedTotal = `₹${totalBill.toLocaleString('en-IN')}`;
+    const formattedOwed = `₹${owedAmount.toLocaleString('en-IN')}`;
+    if (type === 'settlement') {
+        notifTitle = 'All Settled Up! 💕';
+        notifBody = `${paidBy} settled up ${formattedTotal}. All shared dues are cleared!`;
+        actionType = 'ledger_settlement';
+    }
+    else if (type === 'split' || splitMode === 'equal') {
+        notifTitle = `Shared Bill: ${titleText} ✂️`;
+        notifBody = `${paidBy} paid ${formattedTotal} (Split 50/50). Your share is ${formattedOwed}.`;
+        actionType = 'ledger_split';
+    }
+    else if (type === 'lent') {
+        notifTitle = `New Expense: ${titleText} 💸`;
+        notifBody = `${paidBy} covered ${formattedOwed} for you.`;
+        actionType = 'ledger_lent';
+    }
+    else {
+        notifTitle = `Ledger Entry: ${titleText} 📝`;
+        notifBody = `${paidBy} logged an expense of ${formattedTotal}.`;
+        actionType = 'ledger_entry';
+    }
+    try {
+        await admin.messaging().send({
+            token: targetToken,
+            notification: {
+                title: notifTitle,
+                body: notifBody,
+            },
+            data: {
+                type: actionType,
+                entryId: entryId,
+                click_action: 'FLUTTER_NOTIFICATION_CLICK',
+            },
+            android: {
+                priority: 'high',
+                notification: {
+                    channelId: 'puvi_ledger',
+                    sound: 'default',
+                },
+            },
+            webpush: {
+                notification: {
+                    icon: '/icons.svg',
+                },
+            },
+        });
+        console.log(`✓ Ledger notification sent successfully to ${targetUserId}: "${notifTitle}"`);
+    }
+    catch (e) {
+        console.error('Failed to send ledger notification:', e);
+    }
+    return null;
+}
+/**
+ * Triggers when a ledger entry is created in the top-level collection.
+ */
+exports.onLedgerEntryCreated = functions.firestore
+    .document('ledger/{entryId}')
+    .onCreate(async (snap, context) => {
+    return handleLedgerNotification(snap.data(), context.params.entryId);
+});
+/**
+ * Triggers when a ledger entry is created in the couple subcollection.
+ */
+exports.onCoupleLedgerEntryCreated = functions.firestore
+    .document('couples/{coupleId}/ledger/{entryId}')
+    .onCreate(async (snap, context) => {
+    return handleLedgerNotification(snap.data(), context.params.entryId);
 });
 //# sourceMappingURL=index.js.map

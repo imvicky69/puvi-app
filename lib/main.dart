@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'core/services/fcm_token_service.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_radius.dart';
 import 'core/theme/app_spacing.dart';
@@ -19,6 +20,11 @@ Future<void> main() async {
   }
 
   final initialUser = await AuthSessionManager.getSavedUser();
+  if (initialUser != null && initialUser.isNotEmpty) {
+    // Safely sync FCM token in the background on startup
+    FcmTokenService.syncUserFcmToken(userName: initialUser);
+  }
+
   runApp(PuviApp(initialUser: initialUser));
 }
 

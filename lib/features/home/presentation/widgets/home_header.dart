@@ -3,6 +3,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import 'secret_ledger_logo_trigger.dart';
 
 /// Top header component for the Puvi home screen.
 ///
@@ -38,18 +39,8 @@ class HomeHeader extends StatelessWidget {
       color: AppColors.ivory,
       child: Row(
         children: [
-          // Clean Brand Logo (no wrapper padding or circular box)
-          SizedBox(
-            width: 40,
-            height: 40,
-            child: Image.asset(
-              'assets/logo_transparent.png',
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) {
-                return Image.asset('assets/logo.png', fit: BoxFit.contain);
-              },
-            ),
-          ),
+          // Clean Brand Logo with secret 3s hold trigger for Couple Ledger
+          SecretLedgerLogoTrigger(userName: userName),
 
           AppSpacing.horizontalMd,
 

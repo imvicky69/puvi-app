@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../core/services/fcm_token_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
@@ -51,6 +53,14 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
 
+    // Safely sync FCM device token to Firestore in the background
+    unawaited(
+      FcmTokenService.syncUserFcmToken(
+        userName: displayName,
+        email: enteredEmail,
+      ),
+    );
+
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => MainNavScreen(userName: displayName)),
@@ -59,6 +69,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleGoogleSignIn() {
     AuthSessionManager.saveSession(userName: 'Vicky', email: 'vicky@puvi.com');
+    // Safely sync FCM device token to Firestore in the background
+    unawaited(
+      FcmTokenService.syncUserFcmToken(
+        userName: 'Vicky',
+        email: 'vicky@puvi.com',
+      ),
+    );
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const MainNavScreen(userName: 'Vicky')),
     );
