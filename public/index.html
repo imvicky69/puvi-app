@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Puvi — A Private Sanctuary for Puja & Vicky</title>
+  <meta name="description" content="Download Puvi — the private couple memories and relationship sanctuary app for Puja & Vicky. Track milestones, shared memories, love pings, and photo albums.">
+  <link rel="icon" type="image/png" href="assets/logo_transparent.png">
+
+  <!-- Google Fonts: Cormorant Garamond, DM Sans, Caveat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Floating Hearts Background Container -->
+  <div id="hearts-bg" class="hearts-container" aria-hidden="true"></div>
+
+  <!-- Audio Player Element -->
+  <audio id="theme-audio" src="assets/music.mp3" preload="auto" loop></audio>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="brand">
+        <img src="assets/logo_transparent.png" alt="Puvi Logo" class="brand-logo">
+        <div class="brand-text">
+          <span class="brand-title">Puvi</span>
+          <span class="brand-tagline">a private place for two</span>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <!-- Romantic Melody Toggle Button -->
+        <button id="music-btn" class="music-pill" title="Play our romantic theme melody">
+          <span class="music-icon">🎵</span>
+          <span class="music-label">Play Song</span>
+          <span class="music-wave">
+            <span></span><span></span><span></span>
+          </span>
+        </button>
+
+        <a href="https://github.com/imvicky69/puvi-app" target="_blank" rel="noopener" class="github-btn" title="View Source on GitHub">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Hero Container -->
+  <main class="main-content">
+    <section class="hero-card">
+      <!-- Romantic Top Pill -->
+      <div class="couple-pill">
+        <span class="heart-pulse">❤️</span>
+        <span>Puja & Vicky • Digital Sanctuary</span>
+      </div>
+
+      <!-- Editorial Heading -->
+      <h1 class="hero-headline">Our Love, Our Moments,<br>Our Forever Story.</h1>
+      <p class="hero-subtext">
+        A private digital sanctuary crafted for Puja & Vicky: tracking our milestones, secret notes, love showers, and timeless photo albums.
+      </p>
+
+      <!-- Live Release Version Pill -->
+      <div class="version-banner" id="version-banner">
+        <span class="sparkle-icon">✨</span>
+        <span id="version-text">Loading latest release...</span>
+        <span class="badge-dot"></span>
+      </div>
+
+      <!-- Main Download Card -->
+      <div class="download-box">
+        <a id="primary-download-btn" href="https://github.com/imvicky69/puvi-app/releases/latest" class="primary-download-btn">
+          <div class="btn-icon-wrapper">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </div>
+          <div class="btn-text-wrapper">
+            <span class="btn-main-title" id="primary-btn-title">Download Puvi for Android</span>
+            <span class="btn-sub-title" id="primary-btn-sub">ARM64-v8a • ~22.7 MB • Recommended</span>
+          </div>
+        </a>
+
+        <!-- Additional Architecture Download Links -->
+        <div class="variants-wrapper">
+          <button id="toggle-variants-btn" class="toggle-variants-btn">
+            <span>All Android Variants (Universal, 32-bit, x86_64)</span>
+            <svg class="chevron-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+
+          <div id="variants-list" class="variants-list hidden">
+            <a id="link-universal" href="#" class="variant-item">
+              <div class="variant-info">
+                <strong>Universal APK</strong>
+                <span>Compatible with all Android devices</span>
+              </div>
+              <span class="variant-size" id="size-universal">~59.8 MB</span>
+            </a>
+
+            <a id="link-arm32" href="#" class="variant-item">
+              <div class="variant-info">
+                <strong>ARMv7 (32-bit) APK</strong>
+                <span>For older Android smartphones</span>
+              </div>
+              <span class="variant-size" id="size-arm32">~20.3 MB</span>
+            </a>
+
+            <a id="link-x86" href="#" class="variant-item">
+              <div class="variant-info">
+                <strong>x86_64 APK</strong>
+                <span>For Android emulators and Chromebooks</span>
+              </div>
+              <span class="variant-size" id="size-x86">~24.2 MB</span>
+            </a>
+
+            <a id="link-github-release" href="https://github.com/imvicky69/puvi-app/releases/latest" target="_blank" rel="noopener" class="variant-item variant-github">
+              <div class="variant-info">
+                <strong>View GitHub Release Assets</strong>
+                <span>Direct release page & verification checksums</span>
+              </div>
+              <span class="variant-arrow">→</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desktop QR Code Assistant -->
+      <div class="qr-section">
+        <div class="qr-card">
+          <div id="qr-code" class="qr-canvas"></div>
+          <div class="qr-details">
+            <p class="qr-title">📱 Visiting on Desktop?</p>
+            <p class="qr-desc">Scan this QR code with your phone camera to download directly to your mobile device.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Love Shower Simulator -->
+    <section class="interactive-love-card">
+      <div class="love-sim-content">
+        <div class="love-badge">Experience The Magic</div>
+        <h2 class="love-sim-title">Send A Mega Love Shower</h2>
+        <p class="love-sim-desc">Hold down the button below for 1.2 seconds to charge a +1,000 love burst with particle hearts and our theme song!</p>
+
+        <!-- Hold Button -->
+        <div class="hold-button-container">
+          <button id="love-hold-btn" class="love-hold-btn">
+            <div class="hold-progress-ring" id="hold-ring"></div>
+            <span class="heart-pulse-icon">💖</span>
+            <span id="hold-btn-text" class="hold-text">Hold to Shower +1,000 ✨</span>
+          </button>
+        </div>
+
+        <div id="love-explosion-container" class="love-explosion-container"></div>
+      </div>
+    </section>
+
+    <!-- Release Notes & What's New Card -->
+    <section class="notes-card" id="notes-section">
+      <div class="notes-header">
+        <span class="notes-icon">📝</span>
+        <h2 class="notes-title">What's New in this Edition</h2>
+      </div>
+      <div id="release-notes-content" class="notes-body">
+        <div class="notes-item">✨ <strong>Real-time Love Shower</strong>: Hold button sends +1,000 love pings with synchronized melody playback on both sides.</div>
+        <div class="notes-item">✨ <strong>Next Chapter Clock</strong>: Live minimal ticking countdown clock for monthly, half-yearly & yearly anniversaries.</div>
+        <div class="notes-item">✨ <strong>Full-size Romantic Timeline</strong>: Uncropped milestone photos and photo gallery integration.</div>
+        <div class="notes-item">✨ <strong>In-App One-Click Updater</strong>: Seamless updates directly inside the app with Android package installer.</div>
+      </div>
+    </section>
+
+    <!-- Features Showcase -->
+    <section class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">💕</div>
+        <h3 class="feature-title">Love Taps & Shower</h3>
+        <p class="feature-text">Real-time pings and mega showers that play our song on both phones simultaneously.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📖</div>
+        <h3 class="feature-title">Romantic Timeline</h3>
+        <p class="feature-text">Every chapter, anniversary, and cherished memory organized in vintage editorial stationery.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📸</div>
+        <h3 class="feature-title">Private Photo Album</h3>
+        <p class="feature-text">Over 177 encrypted snapshots of our journeys, dates, and smile-filled moments.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">⏳</div>
+        <h3 class="feature-title">Next Chapter Timer</h3>
+        <p class="feature-text">Live ticking countdown clock honoring every single month and year we spend together.</p>
+      </div>
+    </section>
+
+    <!-- 3-Step Install Guide -->
+    <section class="install-guide">
+      <h2 class="guide-title">How to Install on Android</h2>
+      <div class="guide-steps">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <h4>Download APK</h4>
+          <p>Tap the download button above to save the tailored ARM64 APK to your device.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <h4>Open File</h4>
+          <p>Open the notification or visit your Downloads folder and tap the downloaded APK.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <h4>Tap Install</h4>
+          <p>Allow installation from your browser if prompted, and launch your private sanctuary!</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Editorial Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <p class="footer-logo">Puvi</p>
+      <p class="footer-handwritten">crafted with endless love for Puja & Vicky 💕</p>
+      <div class="footer-links">
+        <a href="https://github.com/imvicky69/puvi-app" target="_blank" rel="noopener">GitHub Repository</a>
+        <span>•</span>
+        <a href="https://github.com/imvicky69/puvi-app/releases" target="_blank" rel="noopener">Releases & Checksums</a>
+        <span>•</span>
+        <a href="https://puvi-love.web.app" target="_blank" rel="noopener">Firebase Sanctuary</a>
+      </div>
+      <p class="footer-copy">Version 1.0.0 • Love Letters Edition • Strictly Light-Only Aesthetic</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

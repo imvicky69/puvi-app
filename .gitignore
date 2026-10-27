@@ -12,6 +12,7 @@
 .swiftpm/
 migrate_working_dir/
 scratch/
+.firebase/
 google-services.json
 serviceAccountKey.json
 *serviceAccount*.json
