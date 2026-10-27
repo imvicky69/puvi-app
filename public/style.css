@@ -877,6 +877,104 @@ body {
   opacity: 0.75;
 }
 
+/* Frequently Asked Questions (FAQ) Section */
+.faq-section {
+  background: var(--color-paper);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 36px 32px;
+  box-shadow: var(--shadow-card);
+}
+
+.faq-title {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--color-espresso);
+  margin-bottom: 24px;
+  text-align: center;
+  letter-spacing: -0.3px;
+}
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.faq-item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: var(--color-paper);
+  overflow: hidden;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.faq-item:hover {
+  border-color: var(--color-dusty-rose);
+}
+
+.faq-item[open] {
+  border-color: var(--color-dusty-rose);
+  box-shadow: var(--shadow-subtle);
+}
+
+.faq-question {
+  width: 100%;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  list-style: none;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-espresso);
+  cursor: pointer;
+  user-select: none;
+  gap: 14px;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.faq-question::-webkit-details-marker {
+  display: none;
+}
+
+.faq-question:hover {
+  color: var(--color-burgundy);
+  background: rgba(237, 225, 213, 0.2);
+}
+
+.faq-icon {
+  font-size: 15px;
+  color: var(--color-burgundy);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+
+.faq-item[open] .faq-icon {
+  transform: rotate(180deg);
+}
+
+.faq-answer {
+  padding: 0 20px 18px 20px;
+  font-size: 14px;
+  color: var(--color-taupe);
+  line-height: 1.65;
+  border-top: 1px solid rgba(232, 221, 210, 0.5);
+  margin-top: 4px;
+  padding-top: 12px;
+}
+
+.faq-answer strong {
+  color: var(--color-espresso);
+}
+
+.faq-answer em {
+  color: var(--color-burgundy);
+  font-style: normal;
+}
+
 /* Responsive Breakpoints */
 @media (max-width: 600px) {
   .hero-card {

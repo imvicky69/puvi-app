@@ -84,14 +84,16 @@ function populateReleaseData(data) {
 
   if (primaryAsset) {
     primaryBtn.href = primaryAsset.browser_download_url;
+    primaryBtn.setAttribute('download', primaryAsset.name);
     primaryBtnTitle.textContent = `Download Puvi for Android (${version})`;
     const sizeStr = formatBytes(primaryAsset.size);
-    primaryBtnSub.textContent = `ARM64-v8a • ${sizeStr || '~22.7 MB'} • Recommended`;
+    primaryBtnSub.textContent = `ARM64-v8a • ${sizeStr || '~21.7 MB'} • Recommended`;
     renderQrCode(primaryAsset.browser_download_url);
   }
 
   if (universalAsset) {
     linkUniversal.href = universalAsset.browser_download_url;
+    linkUniversal.setAttribute('download', universalAsset.name);
     sizeUniversal.textContent = formatBytes(universalAsset.size) || '~59.8 MB';
   } else {
     linkUniversal.href = `https://github.com/${GITHUB_REPO}/releases/latest`;
@@ -99,6 +101,7 @@ function populateReleaseData(data) {
 
   if (arm32Asset) {
     linkArm32.href = arm32Asset.browser_download_url;
+    linkArm32.setAttribute('download', arm32Asset.name);
     sizeArm32.textContent = formatBytes(arm32Asset.size) || '~20.3 MB';
   } else {
     linkArm32.href = `https://github.com/${GITHUB_REPO}/releases/latest`;
@@ -106,6 +109,7 @@ function populateReleaseData(data) {
 
   if (x86Asset) {
     linkX86.href = x86Asset.browser_download_url;
+    linkX86.setAttribute('download', x86Asset.name);
     sizeX86.textContent = formatBytes(x86Asset.size) || '~24.2 MB';
   } else {
     linkX86.href = `https://github.com/${GITHUB_REPO}/releases/latest`;
@@ -125,12 +129,16 @@ function populateFallbackReleaseData() {
   const directArm64 = `${baseUrl}/puvi-${version}-arm64-v8a.apk`;
 
   primaryBtn.href = directArm64;
+  primaryBtn.setAttribute('download', `puvi-${version}-arm64-v8a.apk`);
   primaryBtnTitle.textContent = `Download Puvi for Android (${version})`;
-  primaryBtnSub.textContent = `ARM64-v8a • ~22.7 MB • Recommended`;
+  primaryBtnSub.textContent = `ARM64-v8a • ~21.7 MB • Recommended`;
 
   linkUniversal.href = `${baseUrl}/puvi-${version}-universal.apk`;
+  linkUniversal.setAttribute('download', `puvi-${version}-universal.apk`);
   linkArm32.href = `${baseUrl}/puvi-${version}-armeabi-v7a.apk`;
+  linkArm32.setAttribute('download', `puvi-${version}-armeabi-v7a.apk`);
   linkX86.href = `${baseUrl}/puvi-${version}-x86_64.apk`;
+  linkX86.setAttribute('download', `puvi-${version}-x86_64.apk`);
 
   renderQrCode(directArm64);
 }
