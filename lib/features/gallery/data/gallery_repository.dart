@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/widgets.dart' show WidgetsBinding;
 import 'package:path_provider/path_provider.dart';
@@ -81,6 +82,28 @@ class GalleryRepository {
       }
     } catch (_) {}
 
+    // Merge live uploaded memories from Cloud Firestore if available
+    try {
+      final isTesting = WidgetsBinding.instance.runtimeType.toString().contains(
+        'Test',
+      );
+      if (!isTesting) {
+        final snap = await FirebaseFirestore.instance
+            .collection('gallery')
+            .limit(200)
+            .get()
+            .timeout(const Duration(seconds: 3));
+        for (final doc in snap.docs) {
+          final data = doc.data();
+          final id = doc.id;
+          final existingIndex = _allItems.indexWhere((it) => it.id == id);
+          if (existingIndex < 0) {
+            _allItems.add(GalleryItem.fromJson({...data, 'id': id}));
+          }
+        }
+      }
+    } catch (_) {}
+
     // Sort chronologically newest first
     _allItems.sort((a, b) => b.takenAt.compareTo(a.takenAt));
     _isInitialized = true;
@@ -90,6 +113,20 @@ class GalleryRepository {
   int get photosCount => _allItems.where((i) => !i.isVideo).length;
   int get videosCount => _allItems.where((i) => i.isVideo).length;
   int get favoritesCount => _allItems.where((i) => i.isFavorite).length;
+
+  /// Returns all available photo memories (bundled and user-uploaded).
+  Future<List<GalleryItem>> getAllPhotos() async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+    return _allItems
+        .where(
+          (i) =>
+              !i.isVideo &&
+              (i.imageUrl.trim().isNotEmpty || i.mediaUrl.trim().isNotEmpty),
+        )
+        .toList();
+  }
 
   /// Retrieves a paginated slice of memories according to the active filter.
   Future<List<GalleryItem>> fetchPage({

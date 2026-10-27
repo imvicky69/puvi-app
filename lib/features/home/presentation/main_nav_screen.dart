@@ -38,7 +38,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
         index: _currentIndex,
         children: [
           HomeTab(userName: widget.userName),
-          const TimelineTab(),
+          TimelineTab(userName: widget.userName),
           const GalleryTab(),
           AccountTab(userName: widget.userName),
         ],

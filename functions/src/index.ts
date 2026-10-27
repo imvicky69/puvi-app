@@ -3,6 +3,119 @@ import * as admin from 'firebase-admin';
 
 admin.initializeApp();
 
+interface TargetRecipient {
+  userId: string;
+  name: string;
+  fcmToken: string;
+}
+
+/**
+ * Resolves the partner (recipient) and their FCM device token.
+ * Searches the users collection for the user who is NOT senderIdOrName.
+ */
+async function getPartnerRecipient(
+  senderIdOrName?: string | null
+): Promise<TargetRecipient | null> {
+  const usersSnap = await admin.firestore().collection('users').get();
+  if (usersSnap.empty) return null;
+
+  const normalizedSender = (senderIdOrName || '').trim().toLowerCase();
+
+  // 1. Match partner who is not the sender and has a valid FCM token
+  for (const doc of usersSnap.docs) {
+    const data = doc.data();
+    const docId = doc.id.toLowerCase();
+    const docName = (data.name || '').toLowerCase();
+    const docEmail = (data.email || '').toLowerCase();
+
+    const isSender =
+      normalizedSender.length > 0 &&
+      (docId === normalizedSender ||
+        docName === normalizedSender ||
+        docEmail.includes(normalizedSender));
+
+    if (!isSender && data.fcmToken) {
+      return {
+        userId: doc.id,
+        name: data.name || (doc.id === 'HfzubbPMBsgQugeC5AcNqyWbwlw2' ? 'Puja' : 'Vicky'),
+        fcmToken: data.fcmToken,
+      };
+    }
+  }
+
+  // 2. Fallback: If sender couldn't be determined, pick any user with an active token
+  for (const doc of usersSnap.docs) {
+    const data = doc.data();
+    if (data.fcmToken) {
+      return {
+        userId: doc.id,
+        name: data.name || doc.id,
+        fcmToken: data.fcmToken,
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Sends a high-priority push notification compatible with both Android (Flutter) and Web.
+ */
+async function sendPushNotification({
+  token,
+  title,
+  body,
+  data = {},
+  channelId = 'puvi_love_channel',
+}: {
+  token: string;
+  title: string;
+  body: string;
+  data?: Record<string, string>;
+  channelId?: string;
+}): Promise<void> {
+  try {
+    await admin.messaging().send({
+      token,
+      notification: {
+        title,
+        body,
+      },
+      data: {
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        ...data,
+      },
+      android: {
+        priority: 'high',
+        notification: {
+          channelId,
+          sound: 'default',
+          defaultSound: true,
+          defaultVibrateTimings: true,
+        },
+      },
+      webpush: {
+        notification: {
+          icon: '/icons.svg',
+        },
+      },
+    });
+    console.log(`✓ Push notification sent successfully: "${title}"`);
+  } catch (error: any) {
+    console.error('Failed to send push notification:', error);
+    if (
+      error.code === 'messaging/registration-token-not-registered' ||
+      error.code === 'messaging/invalid-registration-token'
+    ) {
+      console.warn(`[FCM] Token is no longer registered: ${token.substring(0, 15)}...`);
+    }
+  }
+}
+
+/**
+ * Trigger: moods/{userId}
+ * Notifies the partner when mood is updated or when an interactive love action (hug, kiss, miss you) is sent.
+ */
 export const onMoodChange = functions.firestore
   .document('moods/{userId}')
   .onWrite(async (change, context) => {
@@ -12,19 +125,10 @@ export const onMoodChange = functions.firestore
 
     if (!newData) return null; // Document deleted
 
-    let targetToken: string | null = null;
-    let targetUserId: string | null = null;
-
-    const usersSnap = await admin.firestore().collection('users').get();
-    usersSnap.forEach(doc => {
-      if (doc.id !== userId) {
-        targetUserId = doc.id;
-        targetToken = doc.data().fcmToken;
-      }
-    });
-
-    if (!targetToken) {
-      console.log('No target FCM token found.');
+    // The recipient is the partner, NOT the user writing the mood
+    const recipient = await getPartnerRecipient(userId);
+    if (!recipient) {
+      console.log('No recipient FCM token found for mood change.');
       return null;
     }
 
@@ -33,98 +137,53 @@ export const onMoodChange = functions.firestore
     let actionType = '';
 
     if (newData.hugStatedAt && newData.hugStatedAt !== prevData?.hugStatedAt) {
-      targetUserId = userId;
-
-      const userDoc = await admin.firestore().collection('users').doc(userId).get();
-      targetToken = userDoc.data()?.fcmToken;
-
-      if (!targetToken) return null;
-
       const sender = newData.hugSentBy || 'Your partner';
-      title = `You received a hug! 🤗`;
+      title = 'You received a hug! 🤗';
       body = `${sender} sent you a warm hug!`;
       actionType = 'hug';
-
     } else if (newData.missYouSentAt && newData.missYouSentAt !== prevData?.missYouSentAt) {
-      targetUserId = userId;
-
-      const userDoc = await admin.firestore().collection('users').doc(userId).get();
-      targetToken = userDoc.data()?.fcmToken;
-
-      if (!targetToken) return null;
-
       const sender = newData.missYouSentBy || 'Your partner';
-      title = `Someone misses you! 🥺`;
+      title = 'Someone misses you! 🥺';
       body = `${sender} misses you so much!`;
       actionType = 'missYou';
-
     } else if (newData.kissSentAt && newData.kissSentAt !== prevData?.kissSentAt) {
-      targetUserId = userId;
-
-      const userDoc = await admin.firestore().collection('users').doc(userId).get();
-      targetToken = userDoc.data()?.fcmToken;
-
-      if (!targetToken) return null;
-
       const sender = newData.kissSentBy || 'Your partner';
-      title = `A kiss for you! 💋`;
+      title = 'A kiss for you! 💋';
       body = `${sender} sent you a kiss!`;
       actionType = 'kiss';
-
     } else if (newData.label !== prevData?.label) {
-      const myDoc = await admin.firestore().collection('users').doc(userId).get();
-      const myName = myDoc.data()?.name || 'Your partner';
-
-      title = `Mood Update`;
-      body = `${myName} feels ${newData.label} now.`;
+      const senderDoc = await admin.firestore().collection('users').doc(userId).get();
+      const senderName = senderDoc.data()?.name || 'Your partner';
+      title = 'Mood Update';
+      body = `${senderName} feels ${newData.label} now.`;
       actionType = 'mood';
     } else {
       return null;
     }
 
-    try {
-      await admin.messaging().send({
-        token: targetToken as string,
-        notification: {
-          title,
-          body,
-        },
-        data: {
-          type: actionType,
-        },
-        webpush: {
-          notification: {
-            icon: '/icons.svg',
-          },
-        },
-      });
-      console.log('Notification sent successfully to', targetUserId);
-    } catch (e) {
-      console.error('Failed to send notification', e);
-    }
+    await sendPushNotification({
+      token: recipient.fcmToken,
+      title,
+      body,
+      data: { type: actionType },
+      channelId: 'puvi_love_channel',
+    });
 
     return null;
   });
 
+/**
+ * Trigger: chatMessages/{messageId}
+ * Notifies the partner when a new message, kiss, or hug is sent in the chat.
+ */
 export const onNewMessage = functions.firestore
   .document('chatMessages/{messageId}')
   .onCreate(async (snap, context) => {
     const data = snap.data();
     const senderId = data.senderId;
 
-    // Find the other user's FCM token
-    let targetToken: string | null = null;
-    let targetUserId: string | null = null;
-
-    const usersSnap = await admin.firestore().collection('users').get();
-    usersSnap.forEach(doc => {
-      if (doc.id !== senderId) {
-        targetUserId = doc.id;
-        targetToken = doc.data().fcmToken;
-      }
-    });
-
-    if (!targetToken) {
+    const recipient = await getPartnerRecipient(senderId);
+    if (!recipient) {
       console.log('No target FCM token found for chat message.');
       return null;
     }
@@ -134,7 +193,7 @@ export const onNewMessage = functions.firestore
     const senderName = senderDoc.data()?.name || 'Your partner';
 
     let title = `${senderName}`;
-    let body = data.text;
+    let body = data.text || '';
     let actionType = 'chat';
 
     if (data.type === 'kiss') {
@@ -147,119 +206,93 @@ export const onNewMessage = functions.firestore
       actionType = 'hug';
     }
 
-    try {
-      await admin.messaging().send({
-        token: targetToken as string,
-        notification: {
-          title,
-          body,
-        },
-        data: {
-          type: actionType,
-          messageId: context.params.messageId,
-        },
-        webpush: {
-          notification: {
-            icon: '/icons.svg',
-          },
-        },
-      });
-      console.log('Chat notification sent successfully to', targetUserId);
-    } catch (e) {
-      console.error('Failed to send chat notification', e);
-    }
+    await sendPushNotification({
+      token: recipient.fcmToken,
+      title,
+      body,
+      data: {
+        type: actionType,
+        messageId: context.params.messageId,
+      },
+      channelId: 'puvi_chat',
+    });
 
     return null;
   });
 
+/**
+ * Trigger: pings/{pingId}
+ * Restored function: Notifies partner when a "thinking of you" love ping is sent.
+ */
+export const onNewPing = functions.firestore
+  .document('pings/{pingId}')
+  .onCreate(async (snap, context) => {
+    const data = snap.data();
+    const senderId = data.senderId;
 
+    const recipient = await getPartnerRecipient(senderId);
+    if (!recipient) {
+      console.log('No recipient FCM token found for ping.');
+      return null;
+    }
 
+    const senderDoc = await admin.firestore().collection('users').doc(senderId).get();
+    const senderName = senderDoc.data()?.name || 'Your partner';
+
+    const title = `${senderName} is thinking of you! 💕`;
+    const body = data.message || 'Tap to see the love!';
+
+    await sendPushNotification({
+      token: recipient.fcmToken,
+      title,
+      body,
+      data: {
+        type: 'ping',
+        pingId: context.params.pingId,
+      },
+      channelId: 'puvi_love_channel',
+    });
+
+    return null;
+  });
+
+/**
+ * Trigger: shared/stats
+ * Notifies partner when the shared love tap count increases.
+ */
 export const onLoveCountUpdate = functions.firestore
   .document('shared/stats')
-  .onUpdate(async (change, context) => {
+  .onUpdate(async (change) => {
     const newData = change.after.data();
     const prevData = change.before.data();
 
-    console.log('❤️ Love count update triggered');
-    console.log('New Data:', JSON.stringify(newData));
-    console.log('Prev Data:', JSON.stringify(prevData));
+    if (!newData || !prevData) return null;
 
-    if (!newData || !prevData) {
-      console.log('Missing data, returning');
-      return null;
-    }
-
-    // Only notify if loveCount increased
     const loveCountDiff = (newData.loveCount || 0) - (prevData.loveCount || 0);
-    console.log('Love count diff:', loveCountDiff);
-    
-    if (loveCountDiff <= 0) {
-      console.log('No increase in love count');
-      return null;
-    }
+    if (loveCountDiff <= 0) return null;
 
     const senderId = newData.lastUpdatedBy;
-    console.log('Sender ID:', senderId);
-
-    // Find the other user's FCM token
-    let targetToken: string | null = null;
-    let targetUserId: string | null = null;
-
-    const usersSnap = await admin.firestore().collection('users').get();
-    console.log('Found', usersSnap.size, 'users in database');
-
-    usersSnap.forEach(doc => {
-      const userData = doc.data();
-      const token = userData.fcmToken;
-      const name = userData.name || doc.id;
-      console.log(`Checking user: "${name}" (${doc.id}), hasToken: ${!!token}`);
-
-      if (senderId) {
-        if (doc.id !== senderId && token) {
-          targetUserId = doc.id;
-          targetToken = token;
-        }
-      } else {
-        // Fallback: If no senderId, track if we find anyone with a token
-        if (token) {
-          targetUserId = doc.id;
-          targetToken = token;
-        }
-      }
-    });
-
-    if (!targetToken) {
-      console.log('❌ No target FCM token found for love count update. Are notifications enabled for anyone?');
+    const recipient = await getPartnerRecipient(senderId);
+    if (!recipient) {
+      console.log('No target FCM token found for love count update.');
       return null;
     }
 
-    // Determine sender name
-    const senderDoc = await admin.firestore().collection('users').doc(senderId).get();
-    const senderName = senderDoc.data()?.name || 'Your partner';
+    const senderDoc = senderId
+      ? await admin.firestore().collection('users').doc(senderId).get()
+      : null;
+    const senderName = senderDoc?.data()?.name || 'Your partner';
 
     const title = 'More Love! ❤️';
     const body = `${senderName} loved you more! Shared count increased by ${loveCountDiff.toLocaleString()}!`;
 
-    try {
-      await admin.messaging().send({
-        token: targetToken as string,
-        notification: {
-          title,
-          body,
-        },
-        data: {
-          type: 'love_update',
-        },
-        webpush: {
-          notification: {
-            icon: '/icons.svg',
-          },
-        },
-      });
-      console.log('Love update notification sent successfully to', targetUserId);
-    } catch (e) {
-      console.error('Failed to send love update notification', e);
-    }
+    await sendPushNotification({
+      token: recipient.fcmToken,
+      title,
+      body,
+      data: { type: 'love_update' },
+      channelId: 'puvi_love_channel',
+    });
 
     return null;
   });
@@ -282,43 +315,9 @@ async function handleLedgerNotification(
   const splitMode = data.splitMode || 'equal';
   const titleText = data.title || 'Shared Expense';
 
-  // Find partner's FCM token from users collection
-  let targetToken: string | null = null;
-  let targetUserId: string | null = null;
-
-  const usersSnap = await admin.firestore().collection('users').get();
-
-  usersSnap.forEach(doc => {
-    const userData = doc.data();
-    const userName = (userData.name || '').toLowerCase();
-    const userEmail = (userData.email || '').toLowerCase();
-
-    // If owedBy is defined, match it
-    if (owedBy) {
-      if (userName === owedBy.toLowerCase() || userEmail.includes(owedBy.toLowerCase())) {
-        targetUserId = doc.id;
-        targetToken = userData.fcmToken || null;
-      }
-    } else {
-      // Otherwise match the partner who is not paidBy
-      if (userName !== paidBy.toLowerCase() && !userEmail.includes(paidBy.toLowerCase())) {
-        targetUserId = doc.id;
-        targetToken = userData.fcmToken || null;
-      }
-    }
-  });
-
-  // Fallback: If still not resolved, pick whichever user isn't paidBy and has a token
-  if (!targetToken) {
-    usersSnap.forEach(doc => {
-      const userData = doc.data();
-      const userName = (userData.name || '').toLowerCase();
-      if (userName !== paidBy.toLowerCase() && userData.fcmToken) {
-        targetUserId = doc.id;
-        targetToken = userData.fcmToken;
-      }
-    });
-  }
+  // Target the owedBy person, or partner who is not paidBy
+  const recipient = await getPartnerRecipient(owedBy ? undefined : paidBy);
+  const targetToken = recipient?.fcmToken;
 
   if (!targetToken) {
     console.log('No recipient FCM token found for ledger entry:', entryId);
@@ -350,35 +349,16 @@ async function handleLedgerNotification(
     actionType = 'ledger_entry';
   }
 
-  try {
-    await admin.messaging().send({
-      token: targetToken,
-      notification: {
-        title: notifTitle,
-        body: notifBody,
-      },
-      data: {
-        type: actionType,
-        entryId: entryId,
-        click_action: 'FLUTTER_NOTIFICATION_CLICK',
-      },
-      android: {
-        priority: 'high',
-        notification: {
-          channelId: 'puvi_ledger',
-          sound: 'default',
-        },
-      },
-      webpush: {
-        notification: {
-          icon: '/icons.svg',
-        },
-      },
-    });
-    console.log(`✓ Ledger notification sent successfully to ${targetUserId}: "${notifTitle}"`);
-  } catch (e) {
-    console.error('Failed to send ledger notification:', e);
-  }
+  await sendPushNotification({
+    token: targetToken,
+    title: notifTitle,
+    body: notifBody,
+    data: {
+      type: actionType,
+      entryId: entryId,
+    },
+    channelId: 'puvi_ledger',
+  });
 
   return null;
 }

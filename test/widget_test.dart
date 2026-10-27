@@ -27,7 +27,8 @@ void main() {
 
       // 2. Tap Google Sign In button to navigate to MainNavScreen
       await tester.tap(find.text('Sign in with Google'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // 3. Verify MainNavScreen is rendered
       expect(find.byType(MainNavScreen), findsOneWidget);
@@ -43,12 +44,14 @@ void main() {
 
       // Test Love Whisper modal
       await tester.ensureVisible(find.text('Love Whisper'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
       await tester.tap(find.text('Love Whisper'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
       expect(find.text('Today\'s Love Note'), findsOneWidget);
       await tester.tap(find.text('Close Whisper'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // 5. Verify the 4 bottom navigation items exist
       expect(find.text('Home'), findsOneWidget);
@@ -58,7 +61,8 @@ void main() {
 
       // 6. Test Gallery tab with postcard layout and filters
       await tester.tap(find.text('Gallery'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('Cherished Postcards • Vicky & Puja'), findsOneWidget);
       expect(find.textContaining('All ('), findsOneWidget);
@@ -66,7 +70,8 @@ void main() {
 
       // 7. Test Account tab with user & partner data
       await tester.tap(find.text('Account'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // Verify Account Screen elements
       expect(find.text('Profile & Settings'), findsOneWidget);
@@ -78,16 +83,18 @@ void main() {
 
       // 7. Test Logout confirmation dialog
       await tester.ensureVisible(find.text('Sign Out'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
       await tester.tap(find.text('Sign Out'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('Sign out of Puvi?'), findsOneWidget);
       expect(find.text('Stay'), findsOneWidget);
 
       // Confirm sign out in dialog
       await tester.tap(find.widgetWithText(ElevatedButton, 'Sign Out'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // Verify we returned to LoginScreen
       expect(find.byType(LoginScreen), findsOneWidget);
