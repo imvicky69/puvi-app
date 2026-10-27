@@ -20,6 +20,8 @@ old_app_data.json
 gallery_refined.json
 assets/gallery.json
 screenshot*.png
+*.apk
+*.aab
 *.env
 *.env.*
 *.keystore
