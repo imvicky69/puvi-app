@@ -1,14 +1,44 @@
 #!/usr/bin/env bash
 # Puvi Split APK & Release Generation Script (Bash)
-# Usage:
-#   ./scripts/build_release.sh 1.0.1 2
-#   ./scripts/build_release.sh 1.0.1 2 --publish
+# Supported Usages:
+#   ./scripts/build_release.sh
+#   ./scripts/build_release.sh 1.0.0 1
+#   ./scripts/build_release.sh 1.0.0 1 --publish
+#   ./scripts/build_release.sh -Version "1.0.0" -BuildNumber 1 -CreateGithubRelease
+#   ./scripts/build_release.sh --version 1.0.0 --build 1 --publish
 
 set -e
 
-VERSION="${1:-}"
-BUILD_NUMBER="${2:-}"
-PUBLISH_FLAG="${3:-}"
+VERSION=""
+BUILD_NUMBER=""
+PUBLISH=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -Version|-version|--version|-v)
+      VERSION="$2"
+      shift 2
+      ;;
+    -BuildNumber|-build|--build-number|--build|-b)
+      BUILD_NUMBER="$2"
+      shift 2
+      ;;
+    -CreateGithubRelease|--publish|--create-github-release|-p)
+      PUBLISH=true
+      shift
+      ;;
+    *)
+      if [ -z "$VERSION" ]; then
+        VERSION="$1"
+      elif [ -z "$BUILD_NUMBER" ]; then
+        BUILD_NUMBER="$1"
+      elif [ "$1" == "--publish" ] || [ "$1" == "-CreateGithubRelease" ]; then
+        PUBLISH=true
+      fi
+      shift
+      ;;
+  esac
+done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -104,7 +134,7 @@ EOF
 echo "✓ Generated release notes template at $NOTES_FILE"
 echo "✓ Generated SHA256 checksums at $CHECKSUM_FILE"
 
-if [ "$PUBLISH_FLAG" == "--publish" ]; then
+if [ "$PUBLISH" = true ]; then
   if command -v gh &> /dev/null; then
     echo -e "\nPublishing release v$VERSION to GitHub (imvicky69/puvi-app)..."
     gh release create "v$VERSION" "$RELEASE_DIR"/*.apk --title "Puvi v$VERSION 💕" --notes-file "$NOTES_FILE"
