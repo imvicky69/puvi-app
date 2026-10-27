@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../../../../core/services/love_stats_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/utils/anniversary_helper.dart';
 
 /// Memory model for the dynamic hero section.
 class HeroMemory {
@@ -53,17 +55,20 @@ class _FloatingHeart {
 /// - Top story progress indicator bars.
 /// - Ken Burns subtle breathing zoom effect.
 /// - Double-tap / tap heart reaction particle burst that increments love pings.
+/// - Live relationship days counter computed dynamically from anniversary date.
 /// - Interactive dynamic quote generator ("Love Whispers").
 class DynamicHeroCard extends StatefulWidget {
   final int initialLoveCount;
   final ValueChanged<int>? onLoveCountChanged;
   final bool autoAnimate;
+  final DateTime? togetherSince;
 
   const DynamicHeroCard({
     super.key,
     this.initialLoveCount = 272000,
     this.onLoveCountChanged,
     this.autoAnimate = true,
+    this.togetherSince,
   });
 
   @override
@@ -77,6 +82,12 @@ class _DynamicHeroCardState extends State<DynamicHeroCard>
   Timer? _autoPlayTimer;
   int _currentIndex = 0;
   late int _loveCount;
+
+  DateTime get _anniversaryDate =>
+      widget.togetherSince ?? LoveStatsService.togetherSince;
+
+  int get _daysTogether =>
+      AnniversaryHelper.calculateDaysTogether(_anniversaryDate);
 
   bool get _isTestEnv =>
       WidgetsBinding.instance.runtimeType.toString().contains('Test');
@@ -129,6 +140,14 @@ class _DynamicHeroCardState extends State<DynamicHeroCard>
     if (widget.autoAnimate && !_isTestEnv) {
       _zoomController.repeat(reverse: true);
       _startAutoPlay();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant DynamicHeroCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialLoveCount != oldWidget.initialLoveCount) {
+      _loveCount = widget.initialLoveCount;
     }
   }
 
@@ -325,43 +344,46 @@ class _DynamicHeroCardState extends State<DynamicHeroCard>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Together Forever pill
+                      // Together Forever pill with live days
                       Flexible(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.35),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.25),
-                              width: 1,
+                        child: GestureDetector(
+                          onTap: () => _showRelationshipDaysModal(context),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
                             ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.favorite_rounded,
-                                size: 13,
-                                color: AppColors.dustyRose,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.45),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.3),
+                                width: 1,
                               ),
-                              const SizedBox(width: 5),
-                              Flexible(
-                                child: Text(
-                                  'Day 1,428 • Vicky & Puja',
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTypography.captionSmall.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 11,
-                                    letterSpacing: 0.3,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.favorite_rounded,
+                                  size: 13,
+                                  color: AppColors.dustyRose,
+                                ),
+                                const SizedBox(width: 5),
+                                Flexible(
+                                  child: Text(
+                                    'Day $_daysTogether • Vicky & Puja',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTypography.captionSmall.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 11,
+                                      letterSpacing: 0.3,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -370,8 +392,12 @@ class _DynamicHeroCardState extends State<DynamicHeroCard>
                       // Interactive Love Tap Chip
                       GestureDetector(
                         onTap: () {
-                          // Tap spawns hearts in center-right
+                          // Tap spawns hearts and increments love count
                           _spawnHeart(const Offset(300, 260));
+                          setState(() {
+                            _loveCount++;
+                            widget.onLoveCountChanged?.call(_loveCount);
+                          });
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
@@ -623,6 +649,144 @@ class _DynamicHeroCardState extends State<DynamicHeroCard>
             }),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showRelationshipDaysModal(BuildContext context) {
+    final days = _daysTogether;
+    final hours = days * 24;
+    final minutes = hours * 60;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xl,
+            vertical: AppSpacing.lg,
+          ),
+          decoration: const BoxDecoration(
+            color: AppColors.paper,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(
+              top: BorderSide(color: AppColors.border, width: 1.5),
+            ),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                AppSpacing.verticalMd,
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: const BoxDecoration(
+                    color: AppColors.blushSand,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.favorite_rounded,
+                    size: 28,
+                    color: AppColors.burgundy,
+                  ),
+                ),
+                AppSpacing.verticalSm,
+                Text(
+                  'Day $days of Us',
+                  style: AppTypography.h2.copyWith(
+                    fontSize: 22,
+                    color: AppColors.espresso,
+                  ),
+                ),
+                AppSpacing.verticalXxs,
+                Text(
+                  'Together since April 11, 2026 • Vicky & Puja',
+                  style: AppTypography.captionSmall.copyWith(
+                    color: AppColors.taupe,
+                  ),
+                ),
+                AppSpacing.verticalMd,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildTimeMetricTile(days.toString(), 'Days'),
+                    _buildTimeMetricTile('${hours ~/ 1000}k+', 'Hours'),
+                    _buildTimeMetricTile(
+                      '${(minutes / 1000000).toStringAsFixed(1)}M',
+                      'Mins',
+                    ),
+                    _buildTimeMetricTile(
+                      '${(_loveCount / 1000).toStringAsFixed(1)}k',
+                      'Pings',
+                    ),
+                  ],
+                ),
+                AppSpacing.verticalLg,
+                Text(
+                  '"In all the world, there is no heart for me like yours. In all the world, there is no love for you like mine."\n— For Puja & Vicky',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontFamily: 'serif',
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                    color: AppColors.espresso,
+                    height: 1.4,
+                  ),
+                ),
+                AppSpacing.verticalLg,
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Close Sanctuary'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTimeMetricTile(String value, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.ivory,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: AppTypography.label.copyWith(
+              color: AppColors.burgundy,
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: AppTypography.captionSmall.copyWith(
+              color: AppColors.taupe,
+              fontSize: 11,
+            ),
+          ),
+        ],
       ),
     );
   }

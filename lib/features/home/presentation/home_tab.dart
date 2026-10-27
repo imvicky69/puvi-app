@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../core/services/love_stats_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -19,102 +21,54 @@ class HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<HomeTab> {
-  int _loveCount = 272000;
+  int _loveCount = LoveStatsService.currentLoveCount;
+  StreamSubscription<int>? _statsSub;
 
-  void _sendLovePing() {
-    setState(() => _loveCount++);
+  @override
+  void initState() {
+    super.initState();
+    _statsSub = LoveStatsService.watchLoveCount().listen((count) {
+      if (mounted && count != _loveCount) {
+        setState(() => _loveCount = count);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _statsSub?.cancel();
+    super.dispose();
+  }
+
+  void _sendLovePing([int increment = 1]) {
+    // 1. Instant optimistic UI feedback
+    setState(() => _loveCount += increment);
+
+    // 2. Atomically persist to Firestore `shared/stats` and record in `pings`
+    LoveStatsService.incrementLove(
+      userName: widget.userName,
+      increment: increment,
+    );
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
-          children: const [
-            Icon(Icons.favorite, color: AppColors.dustyRose, size: 18),
-            SizedBox(width: 8),
-            Text('Love Ping sent to your partner! 💕'),
+          children: [
+            const Icon(Icons.favorite, color: AppColors.dustyRose, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                increment > 1
+                    ? '✨ Mega Love Shower! +$increment pings showered with melody 💕'
+                    : 'Love Ping sent to your partner! 💕',
+              ),
+            ),
           ],
         ),
-        duration: const Duration(seconds: 2),
+        duration: const Duration(seconds: 3),
         backgroundColor: AppColors.espresso,
         behavior: SnackBarBehavior.floating,
       ),
-    );
-  }
-
-  void _openSecretLoveNote() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl,
-            vertical: AppSpacing.lg,
-          ),
-          decoration: const BoxDecoration(
-            color: AppColors.paper,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border(
-              top: BorderSide(color: AppColors.border, width: 1.5),
-            ),
-          ),
-          child: SafeArea(
-            top: false,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.border,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  AppSpacing.verticalMd,
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    decoration: const BoxDecoration(
-                      color: AppColors.blushSand,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.favorite_rounded,
-                      size: 28,
-                      color: AppColors.burgundy,
-                    ),
-                  ),
-                  AppSpacing.verticalSm,
-                  Text(
-                    'Today\'s Love Note',
-                    style: AppTypography.h2.copyWith(
-                      fontSize: 20,
-                      color: AppColors.espresso,
-                    ),
-                  ),
-                  AppSpacing.verticalXs,
-                  Text(
-                    '"I loved you yesterday, I love you still, I always have, I always will."\n— For Vicky & Puja',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontFamily: 'serif',
-                      fontSize: 15,
-                      fontStyle: FontStyle.italic,
-                      color: AppColors.espresso,
-                      height: 1.4,
-                    ),
-                  ),
-                  AppSpacing.verticalMd,
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Close Whisper'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -147,8 +101,12 @@ class _HomeTabState extends State<HomeTab> {
                         // Dynamic Hero Section with Vicky & Puja's photos
                         DynamicHeroCard(
                           initialLoveCount: _loveCount,
+                          togetherSince: LoveStatsService.togetherSince,
                           onLoveCountChanged: (count) {
-                            setState(() => _loveCount = count);
+                            final diff = count - _loveCount;
+                            if (diff > 0) {
+                              _sendLovePing(diff);
+                            }
                           },
                         ),
 
@@ -157,8 +115,12 @@ class _HomeTabState extends State<HomeTab> {
                         // Quick Romantic Action Tiles
                         QuickLoveActions(
                           loveCount: _loveCount,
+                          partnerName: widget.userName.toLowerCase() == 'puja'
+                              ? 'Vicky'
+                              : 'Puja',
+                          togetherSince: LoveStatsService.togetherSince,
                           onSendLove: _sendLovePing,
-                          onOpenNote: _openSecretLoveNote,
+                          onSendLoveBatch: (batch) => _sendLovePing(batch),
                         ),
 
                         AppSpacing.verticalLg,

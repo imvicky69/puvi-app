@@ -3,10 +3,22 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
         android:label="Puvi"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Enable Firebase Messaging Installation ID & Auto-Init for FCM Token Capture -->
+        <meta-data
+            android:name="firebase_messaging_installation_id_enabled"
+            android:value="true" />
+        <meta-data
+            android:name="firebase_messaging_auto_init_enabled"
+            android:value="true" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="puvi_love_channel" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

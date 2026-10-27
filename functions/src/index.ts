@@ -34,11 +34,13 @@ async function getPartnerRecipient(
         docName === normalizedSender ||
         docEmail.includes(normalizedSender));
 
-    if (!isSender && data.fcmToken) {
+    const token = data.fcmToken || data.token;
+
+    if (!isSender && token) {
       return {
         userId: doc.id,
         name: data.name || (doc.id === 'HfzubbPMBsgQugeC5AcNqyWbwlw2' ? 'Puja' : 'Vicky'),
-        fcmToken: data.fcmToken,
+        fcmToken: token,
       };
     }
   }
@@ -46,11 +48,12 @@ async function getPartnerRecipient(
   // 2. Fallback: If sender couldn't be determined, pick any user with an active token
   for (const doc of usersSnap.docs) {
     const data = doc.data();
-    if (data.fcmToken) {
+    const token = data.fcmToken || data.token;
+    if (token) {
       return {
         userId: doc.id,
-        name: data.name || doc.id,
-        fcmToken: data.fcmToken,
+        name: data.name || (doc.id === 'HfzubbPMBsgQugeC5AcNqyWbwlw2' ? 'Puja' : 'Vicky'),
+        fcmToken: token,
       };
     }
   }
@@ -228,6 +231,13 @@ export const onNewPing = functions.firestore
   .document('pings/{pingId}')
   .onCreate(async (snap, context) => {
     const data = snap.data();
+    if (!data) return null;
+
+    // Love count updates are handled seamlessly by onLoveCountUpdate on shared/stats
+    if (data.count && Number(data.count) > 0) {
+      return null;
+    }
+
     const senderId = data.senderId;
 
     const recipient = await getPartnerRecipient(senderId);
@@ -281,16 +291,31 @@ export const onLoveCountUpdate = functions.firestore
     const senderDoc = senderId
       ? await admin.firestore().collection('users').doc(senderId).get()
       : null;
-    const senderName = senderDoc?.data()?.name || 'Your partner';
+    const senderName =
+      senderDoc?.data()?.name ||
+      (senderId === 'HfzubbPMBsgQugeC5AcNqyWbwlw2' ? 'Puja' : 'Vicky');
 
-    const title = 'More Love! ❤️';
-    const body = `${senderName} loved you more! Shared count increased by ${loveCountDiff.toLocaleString()}!`;
+    const isMegaShower = loveCountDiff >= 1000;
+    const title = isMegaShower
+      ? `✨ Mega Love Shower from ${senderName}! 💖`
+      : `${senderName} loved you more! ❤️`;
+    const body = isMegaShower
+      ? `${senderName} showered you with +${loveCountDiff.toLocaleString()} love pings with your song! Tap to feel the love 💕`
+      : `Shared love count reached ${(newData.loveCount || 0).toLocaleString()} pings! Tap to reciprocate 💕`;
 
     await sendPushNotification({
       token: recipient.fcmToken,
       title,
       body,
-      data: { type: 'love_update' },
+      data: {
+        type: 'love_update',
+        increment: loveCountDiff.toString(),
+        isMegaShower: isMegaShower.toString(),
+        senderId: senderId || '',
+        senderName,
+        totalLoveCount: (newData.loveCount || 0).toString(),
+        playMusic: isMegaShower.toString(),
+      },
       channelId: 'puvi_love_channel',
     });
 

@@ -40,16 +40,12 @@ void main() {
       // Verify Dynamic Hero Card and Romantic Actions
       expect(find.text('LOVE BIRDS'), findsOneWidget);
       expect(find.text('Send Love'), findsOneWidget);
-      expect(find.text('Love Whisper'), findsOneWidget);
+      expect(find.text('Next Chapter'), findsOneWidget);
 
-      // Test Love Whisper modal
-      await tester.ensureVisible(find.text('Love Whisper'));
+      // Test Next Chapter milestone cycling
+      await tester.ensureVisible(find.text('Next Chapter'));
       await tester.pump(const Duration(milliseconds: 100));
-      await tester.tap(find.text('Love Whisper'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Today\'s Love Note'), findsOneWidget);
-      await tester.tap(find.text('Close Whisper'));
+      await tester.tap(find.text('Next Chapter'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 

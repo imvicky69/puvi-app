@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart' show WidgetsBinding;
+import 'love_stats_service.dart';
 
 /// Service for safely managing and synchronizing FCM device tokens to Firestore.
 abstract final class FcmTokenService {
@@ -74,7 +75,7 @@ abstract final class FcmTokenService {
         '[FcmTokenService] Notification authorization: ${settings.authorizationStatus}',
       );
 
-      // 4. Listen for registered/refreshed tokens
+      // 4. Listen for registered / refreshed tokens
       if (!_hasInitializedRefreshListener) {
         _hasInitializedRefreshListener = true;
         messaging.onRegistered.listen((newToken) {
@@ -82,20 +83,96 @@ abstract final class FcmTokenService {
             _saveTokenToFirestore(uid, newToken, userName);
           }
         });
+        // ignore: deprecated_member_use
+        messaging.onTokenRefresh.listen((newToken) {
+          if (newToken.isNotEmpty) {
+            _saveTokenToFirestore(uid, newToken, userName);
+          }
+        });
       }
 
       // 5. Trigger device registration
-      await messaging.register();
+      try {
+        await messaging.register();
+      } catch (regErr) {
+        debugPrint('[FcmTokenService] Notice during register(): $regErr');
+      }
 
-      // 6. Direct fallback token retrieval
-      // ignore: deprecated_member_use
-      final token = await messaging.getToken();
-      if (token != null && token.isNotEmpty) {
-        await _saveTokenToFirestore(uid, token, userName);
+      // 6. Direct fallback token retrieval (legacy fallback)
+      try {
+        // ignore: deprecated_member_use
+        final token = await messaging.getToken();
+        if (token != null && token.isNotEmpty) {
+          await _saveTokenToFirestore(uid, token, userName);
+        }
+      } catch (tokenErr) {
+        // When firebase_messaging_installation_id_enabled is true, Firebase
+        // disables legacy getToken() in favor of register() / onRegistered.
+        // We log only unexpected errors.
+        if (!tokenErr.toString().contains('API disabled')) {
+          debugPrint('[FcmTokenService] Notice during getToken(): $tokenErr');
+        }
       }
     } catch (e) {
       // Intentionally silent catch to ensure login flow is never broken
       debugPrint('[FcmTokenService] Notice: Could not sync FCM token: $e');
+    }
+  }
+
+  static bool _hasInitializedNotificationListeners = false;
+
+  /// Sets up FCM message opened handlers and foreground push listeners
+  /// so that tapping a love push notification or receiving it in foreground
+  /// triggers the love shower animation and melody.
+  static void initializeNotificationHandling() {
+    if (_isTesting ||
+        Firebase.apps.isEmpty ||
+        _hasInitializedNotificationListeners) {
+      return;
+    }
+    _hasInitializedNotificationListeners = true;
+
+    try {
+      final messaging = FirebaseMessaging.instance;
+
+      // 1. App opened from background by tapping notification
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        _handleLoveNotificationData(message.data);
+      });
+
+      // 2. App opened from terminated/killed state by tapping notification
+      messaging.getInitialMessage().then((RemoteMessage? message) {
+        if (message != null) {
+          _handleLoveNotificationData(message.data);
+        }
+      });
+
+      // 3. Foreground notification received
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        _handleLoveNotificationData(message.data);
+      });
+    } catch (e) {
+      debugPrint(
+        '[FcmTokenService] Notice initializing notification handling: $e',
+      );
+    }
+  }
+
+  static void _handleLoveNotificationData(Map<String, dynamic> data) {
+    if (data.isEmpty) return;
+    final type = data['type'];
+    if (type == 'love_update' || type == 'ping') {
+      final increment =
+          int.tryParse(data['increment']?.toString() ?? '') ??
+          (data['isMegaShower'] == 'true' ? 1000 : 1);
+      final isMegaShower = data['isMegaShower'] == 'true' || increment >= 1000;
+      final senderName = data['senderName']?.toString();
+
+      LoveStatsService.triggerLoveCelebration(
+        increment: increment,
+        senderName: senderName,
+        isMegaShower: isMegaShower,
+      );
     }
   }
 

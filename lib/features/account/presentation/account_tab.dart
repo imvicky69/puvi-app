@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/services/love_stats_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -80,10 +81,18 @@ class AccountTab extends StatelessWidget {
                         AppSpacing.verticalMd,
 
                         // 2. Anniversary & Love Metrics
-                        CoupleStatsCard(
-                          anniversaryDate: DateTime(2026, 4, 11),
-                          loveCount: 272000,
-                          totalMemories: 177,
+                        StreamBuilder<int>(
+                          stream: LoveStatsService.watchLoveCount(),
+                          initialData: LoveStatsService.currentLoveCount,
+                          builder: (context, snapshot) {
+                            return CoupleStatsCard(
+                              anniversaryDate: DateTime(2026, 4, 11),
+                              loveCount:
+                                  snapshot.data ??
+                                  LoveStatsService.currentLoveCount,
+                              totalMemories: 177,
+                            );
+                          },
                         ),
 
                         AppSpacing.verticalLg,
