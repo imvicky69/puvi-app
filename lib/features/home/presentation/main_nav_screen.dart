@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../core/services/app_update_service.dart';
 import '../../../core/services/fcm_token_service.dart';
 import '../../../core/services/love_stats_service.dart';
 import '../../../core/theme/app_colors.dart';
@@ -7,6 +8,7 @@ import '../../account/presentation/account_tab.dart';
 import '../../gallery/presentation/gallery_tab.dart';
 import '../../timeline/presentation/timeline_tab.dart';
 import 'home_tab.dart';
+import 'widgets/app_update_banner.dart';
 import 'widgets/love_celebration_overlay.dart';
 import 'widgets/puvi_bottom_nav_bar.dart';
 
@@ -82,10 +84,34 @@ class _MainNavScreenState extends State<MainNavScreen> {
         LoveCelebrationOverlay.showSingleHeart(context);
       }
     });
+
+    // 4. Background update check: displays 5-second top banner if newer GitHub release exists
+    final isTesting =
+        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    if (!isTesting) {
+      _updateCheckTimer = Timer(const Duration(seconds: 3), () async {
+        if (!mounted) return;
+        final update = await AppUpdateService.checkForUpdate();
+        if (mounted && update != null) {
+          final pkg = await AppUpdateService.getPackageInfo();
+          if (mounted) {
+            AppUpdateBanner.show(
+              context,
+              release: update,
+              currentVersion: pkg.version,
+              currentBuild: pkg.buildNumber,
+            );
+          }
+        }
+      });
+    }
   }
+
+  Timer? _updateCheckTimer;
 
   @override
   void dispose() {
+    _updateCheckTimer?.cancel();
     _partnerLoveSub?.cancel();
     super.dispose();
   }
