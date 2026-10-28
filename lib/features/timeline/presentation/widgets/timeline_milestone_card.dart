@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/puvi_avatar.dart';
 import '../../data/timeline_item.dart';
 import 'timeline_photo_viewer_dialog.dart';
 
@@ -319,11 +320,28 @@ class TimelineMilestoneCard extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.edit_note_rounded,
-                            size: 12,
-                            color: AppColors.burgundy,
-                          ),
+                          if (item.authorName.toLowerCase() == 'vicky')
+                            const Padding(
+                              padding: EdgeInsets.only(right: 3),
+                              child: PuviAvatar.vicky(
+                                size: 14,
+                                showBorder: false,
+                              ),
+                            )
+                          else if (item.authorName.toLowerCase() == 'puja')
+                            const Padding(
+                              padding: EdgeInsets.only(right: 3),
+                              child: PuviAvatar.puja(
+                                size: 14,
+                                showBorder: false,
+                              ),
+                            )
+                          else
+                            const Icon(
+                              Icons.edit_note_rounded,
+                              size: 12,
+                              color: AppColors.burgundy,
+                            ),
                           const SizedBox(width: 3),
                           Text(
                             item.authorName,

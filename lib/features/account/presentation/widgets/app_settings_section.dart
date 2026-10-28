@@ -46,8 +46,9 @@ class _AppSettingsSectionState extends State<AppSettingsSection> {
     });
 
     // 2. Check for newer GitHub releases in the background (skip in test environment)
-    final isTesting =
-        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    final isTesting = WidgetsBinding.instance.runtimeType.toString().contains(
+      'Test',
+    );
     if (!isTesting) {
       AppUpdateService.checkForUpdate().then((update) {
         if (mounted && update != null) {

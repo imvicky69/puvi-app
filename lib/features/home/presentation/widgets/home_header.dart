@@ -1,8 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../../core/services/couple_encryption_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/puvi_avatar.dart';
+import '../../../chat/data/chat_repository.dart';
+import '../../../chat/presentation/couple_chat_screen.dart';
 import 'secret_ledger_logo_trigger.dart';
 
 /// Top header component for the Puvi home screen.
@@ -11,12 +16,58 @@ import 'secret_ledger_logo_trigger.dart';
 /// - Clean brand logo medallion.
 /// - Dynamic time-of-day greeting ("Good morning / afternoon / evening").
 /// - User's name in editorial typography.
-/// - Interactive dummy chat icon with a subtle romantic notification indicator.
-class HomeHeader extends StatelessWidget {
+/// - Interactive chat icon with live unread badge and navigation to CoupleChatScreen.
+class HomeHeader extends StatefulWidget {
   final String userName;
   final VoidCallback? onChatPressed;
 
   const HomeHeader({super.key, this.userName = 'Vicky', this.onChatPressed});
+
+  @override
+  State<HomeHeader> createState() => _HomeHeaderState();
+}
+
+class _HomeHeaderState extends State<HomeHeader> {
+  final ChatRepository _chatRepository = ChatRepository();
+  StreamSubscription<int>? _unreadSub;
+  int _unreadCount = 0;
+
+  String get _myUid => widget.userName.toLowerCase() == 'puja'
+      ? CoupleEncryptionService.pujaUid
+      : CoupleEncryptionService.vickyUid;
+
+  @override
+  void initState() {
+    super.initState();
+    _unreadSub = _chatRepository.watchUnreadCount(currentUserId: _myUid).listen(
+      (count) {
+        if (mounted && count != _unreadCount) {
+          setState(() => _unreadCount = count);
+        }
+      },
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant HomeHeader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.userName != widget.userName) {
+      _unreadSub?.cancel();
+      _unreadSub = _chatRepository
+          .watchUnreadCount(currentUserId: _myUid)
+          .listen((count) {
+            if (mounted && count != _unreadCount) {
+              setState(() => _unreadCount = count);
+            }
+          });
+    }
+  }
+
+  @override
+  void dispose() {
+    _unreadSub?.cancel();
+    super.dispose();
+  }
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -31,6 +82,8 @@ class HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasUnread = _unreadCount > 0;
+
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
@@ -40,7 +93,7 @@ class HomeHeader extends StatelessWidget {
       child: Row(
         children: [
           // Clean Brand Logo with secret 3s hold trigger for Couple Ledger
-          SecretLedgerLogoTrigger(userName: userName),
+          SecretLedgerLogoTrigger(userName: widget.userName),
 
           AppSpacing.horizontalMd,
 
@@ -61,9 +114,18 @@ class HomeHeader extends StatelessWidget {
                 const SizedBox(height: 1),
                 Row(
                   children: [
+                    PuviAvatar(
+                      nameOrUid: widget.userName,
+                      size: 26,
+                      showBorder: true,
+                      borderWidth: 1.2,
+                      borderColor: AppColors.dustyRose,
+                      backgroundColor: AppColors.ivory,
+                    ),
+                    const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        userName,
+                        widget.userName,
                         overflow: TextOverflow.ellipsis,
                         style: AppTypography.h2.copyWith(
                           fontSize: 22,
@@ -84,15 +146,15 @@ class HomeHeader extends StatelessWidget {
             ),
           ),
 
-          // Top-right dummy chat icon with subtle badge
+          // Top-right interactive chat icon with real-time unread stream
           GestureDetector(
             onTap:
-                onChatPressed ??
+                widget.onChatPressed ??
                 () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Chat messages syncing soon 💕'),
-                      duration: Duration(seconds: 2),
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          CoupleChatScreen(userName: widget.userName),
                     ),
                   );
                 },
@@ -102,7 +164,10 @@ class HomeHeader extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.paper,
                 borderRadius: AppRadius.borderButton,
-                border: Border.all(color: AppColors.border, width: 1.2),
+                border: Border.all(
+                  color: hasUnread ? AppColors.dustyRose : AppColors.border,
+                  width: 1.2,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.espresso.withValues(alpha: 0.03),
@@ -119,18 +184,22 @@ class HomeHeader extends StatelessWidget {
                     color: AppColors.espresso,
                     size: 20,
                   ),
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                        color: AppColors.burgundy,
-                        shape: BoxShape.circle,
+                  if (hasUnread)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          color: AppColors.burgundy,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 8,
+                          minHeight: 8,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),

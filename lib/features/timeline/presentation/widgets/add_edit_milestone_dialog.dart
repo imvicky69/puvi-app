@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/puvi_avatar.dart';
 import '../../../gallery/data/gallery_repository.dart';
 import '../../data/timeline_item.dart';
 import '../../data/timeline_media_service.dart';
@@ -550,13 +551,52 @@ class _AddEditMilestoneDialogState extends State<AddEditMilestoneDialog> {
                                         .map((name) {
                                           return DropdownMenuItem(
                                             value: name,
-                                            child: Text(
-                                              name,
-                                              style: AppTypography.bodyMedium
-                                                  .copyWith(
-                                                    color: AppColors.espresso,
-                                                    fontWeight: FontWeight.w600,
+                                            child: Row(
+                                              children: [
+                                                if (name == 'Vicky')
+                                                  const Padding(
+                                                    padding: EdgeInsets.only(
+                                                      right: 8,
+                                                    ),
+                                                    child: PuviAvatar.vicky(
+                                                      size: 20,
+                                                      showBorder: false,
+                                                    ),
+                                                  )
+                                                else if (name == 'Puja')
+                                                  const Padding(
+                                                    padding: EdgeInsets.only(
+                                                      right: 8,
+                                                    ),
+                                                    child: PuviAvatar.puja(
+                                                      size: 20,
+                                                      showBorder: false,
+                                                    ),
+                                                  )
+                                                else
+                                                  const Padding(
+                                                    padding: EdgeInsets.only(
+                                                      right: 8,
+                                                    ),
+                                                    child: Icon(
+                                                      Icons.favorite_rounded,
+                                                      size: 16,
+                                                      color:
+                                                          AppColors.dustyRose,
+                                                    ),
                                                   ),
+                                                Text(
+                                                  name,
+                                                  style: AppTypography
+                                                      .bodyMedium
+                                                      .copyWith(
+                                                        color:
+                                                            AppColors.espresso,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                ),
+                                              ],
                                             ),
                                           );
                                         })

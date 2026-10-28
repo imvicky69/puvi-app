@@ -86,8 +86,9 @@ class _MainNavScreenState extends State<MainNavScreen> {
     });
 
     // 4. Background update check: displays 5-second top banner if newer GitHub release exists
-    final isTesting =
-        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    final isTesting = WidgetsBinding.instance.runtimeType.toString().contains(
+      'Test',
+    );
     if (!isTesting) {
       _updateCheckTimer = Timer(const Duration(seconds: 3), () async {
         if (!mounted) return;

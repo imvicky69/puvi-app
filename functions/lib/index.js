@@ -194,7 +194,9 @@ exports.onNewMessage = functions.firestore
     const senderDoc = await admin.firestore().collection('users').doc(senderId).get();
     const senderName = ((_a = senderDoc.data()) === null || _a === void 0 ? void 0 : _a.name) || 'Your partner';
     let title = `${senderName}`;
-    let body = data.text || '';
+    let body = data.isEncrypted || (data.text && data.text.startsWith('enc:v1:'))
+        ? 'Sent you a private love note 💕'
+        : data.text || 'Sent you a love note 💕';
     let actionType = 'chat';
     if (data.type === 'kiss') {
         title = `${senderName} sent a kiss! 💋`;
@@ -205,6 +207,16 @@ exports.onNewMessage = functions.firestore
         title = `${senderName} sent a hug! 🤗`;
         body = 'Open Our Space to receive it!';
         actionType = 'hug';
+    }
+    else if (data.type === 'knife') {
+        title = `${senderName} is angry! 🔪`;
+        body = 'Open Our Space to soothe your partner 💕';
+        actionType = 'knife';
+    }
+    else if (data.type === 'flower') {
+        title = `${senderName} sent you flowers! 🌸`;
+        body = 'Open Our Space to watch them bloom 💕';
+        actionType = 'flower';
     }
     await sendPushNotification({
         token: recipient.fcmToken,
