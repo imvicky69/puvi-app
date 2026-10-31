@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'core/services/app_lock_service.dart';
 import 'core/services/fcm_token_service.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_radius.dart';
@@ -18,6 +19,8 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('Firebase init notice: $e');
   }
+
+  await AppLockService.initialize();
 
   final initialUser = await AuthSessionManager.getSavedUser();
   if (initialUser != null && initialUser.isNotEmpty) {

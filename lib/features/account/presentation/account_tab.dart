@@ -12,8 +12,8 @@ import 'widgets/profile_card.dart';
 ///
 /// Features:
 /// - Connected Couple Profile card (Vicky & Puja).
-/// - Anniversary and live days-together metrics.
-/// - Security and dummy app preferences.
+/// - Anniversary date & live ticking countdown milestone ticker.
+/// - Biometric & PIN App Lock with live Firestore notifications toggle.
 /// - Themed logout confirmation.
 class AccountTab extends StatelessWidget {
   final String userName;
@@ -80,27 +80,25 @@ class AccountTab extends StatelessWidget {
 
                         AppSpacing.verticalMd,
 
-                        // 2. Anniversary & Love Metrics
-                        StreamBuilder<int>(
-                          stream: LoveStatsService.watchLoveCount(),
-                          initialData: LoveStatsService.currentLoveCount,
+                        // 2. Anniversary & Cute Milestone Ticker
+                        StreamBuilder<DateTime>(
+                          stream: LoveStatsService.watchTogetherSince(),
+                          initialData: LoveStatsService.togetherSince,
                           builder: (context, snapshot) {
+                            final anniversaryDate =
+                                snapshot.data ?? LoveStatsService.togetherSince;
                             return CoupleStatsCard(
-                              anniversaryDate: DateTime(2026, 4, 11),
-                              loveCount:
-                                  snapshot.data ??
-                                  LoveStatsService.currentLoveCount,
-                              totalMemories: 177,
+                              anniversaryDate: anniversaryDate,
                             );
                           },
                         ),
 
                         AppSpacing.verticalLg,
 
-                        // 3. App Settings & Security Section
-                        const AppSettingsSection(
-                          initialAppLock: true,
-                          appLockPin: '6987',
+                        // 3. Clean App Settings & Security Section
+                        AppSettingsSection(
+                          userName: activeUserName,
+                          initialAppLock: false,
                         ),
 
                         AppSpacing.verticalXl,

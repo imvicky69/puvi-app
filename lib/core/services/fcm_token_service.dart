@@ -158,6 +158,56 @@ abstract final class FcmTokenService {
     }
   }
 
+  /// Streams real-time notifications preference from Firestore `users/{uid}`.
+  static Stream<bool> watchNotificationsEnabled({required String userName}) {
+    if (_isTesting || Firebase.apps.isEmpty) {
+      return Stream.value(true);
+    }
+
+    final uid = getUserId(userName: userName);
+    if (uid == null) return Stream.value(true);
+
+    try {
+      return FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .snapshots()
+          .map((snap) {
+            if (!snap.exists || snap.data() == null) return true;
+            final data = snap.data()!;
+            return data['notificationsEnabled'] != false;
+          })
+          .handleError((e) {
+            debugPrint(
+              '[FcmTokenService] Notice watching notifications toggle: $e',
+            );
+            return true;
+          });
+    } catch (_) {
+      return Stream.value(true);
+    }
+  }
+
+  /// Sets the notifications preference directly in Firestore `users/{uid}`.
+  static Future<void> setNotificationsEnabled({
+    required String userName,
+    required bool enabled,
+  }) async {
+    if (_isTesting || Firebase.apps.isEmpty) return;
+
+    final uid = getUserId(userName: userName);
+    if (uid == null) return;
+
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'notificationsEnabled': enabled,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('[FcmTokenService] Notice writing notifications toggle: $e');
+    }
+  }
+
   static void _handleLoveNotificationData(Map<String, dynamic> data) {
     if (data.isEmpty) return;
     final type = data['type'];

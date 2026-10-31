@@ -36,6 +36,11 @@ async function getPartnerRecipient(
 
     const token = data.fcmToken || data.token;
 
+    // Respect recipient's notifications toggle
+    if (data.notificationsEnabled === false) {
+      continue;
+    }
+
     if (!isSender && token) {
       return {
         userId: doc.id,
@@ -48,6 +53,9 @@ async function getPartnerRecipient(
   // 2. Fallback: If sender couldn't be determined, pick any user with an active token
   for (const doc of usersSnap.docs) {
     const data = doc.data();
+    if (data.notificationsEnabled === false) {
+      continue;
+    }
     const token = data.fcmToken || data.token;
     if (token) {
       return {

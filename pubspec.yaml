@@ -52,6 +52,7 @@ dependencies:
   open_filex: ^5.0.0
   crypto: ^3.0.3
   encrypt: ^5.0.3
+  local_auth: ^3.0.2
 
 dev_dependencies:
   flutter_test:

@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../core/services/app_lock_service.dart';
 import '../../../core/services/app_update_service.dart';
 import '../../../core/services/fcm_token_service.dart';
 import '../../../core/services/love_stats_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../account/presentation/account_tab.dart';
+import '../../account/presentation/widgets/app_lock_screen.dart';
 import '../../gallery/presentation/gallery_tab.dart';
 import '../../timeline/presentation/timeline_tab.dart';
 import 'home_tab.dart';
@@ -28,14 +30,18 @@ class MainNavScreen extends StatefulWidget {
   State<MainNavScreen> createState() => _MainNavScreenState();
 }
 
-class _MainNavScreenState extends State<MainNavScreen> {
+class _MainNavScreenState extends State<MainNavScreen>
+    with WidgetsBindingObserver {
   late int _currentIndex;
   StreamSubscription<LoveUpdateEvent>? _partnerLoveSub;
+  bool _isAppLocked = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentIndex = widget.initialIndex;
+    _isAppLocked = AppLockService.isEnabled && AppLockService.isLocked;
 
     // 1. Establish current active user for love sync & partner identification
     LoveStatsService.setCurrentUser(widget.userName);
@@ -111,7 +117,22 @@ class _MainNavScreenState extends State<MainNavScreen> {
   Timer? _updateCheckTimer;
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      if (AppLockService.isEnabled) {
+        AppLockService.lock();
+      }
+    } else if (state == AppLifecycleState.resumed) {
+      if (AppLockService.isEnabled && AppLockService.isLocked) {
+        setState(() => _isAppLocked = true);
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _updateCheckTimer?.cancel();
     _partnerLoveSub?.cancel();
     super.dispose();
@@ -119,6 +140,16 @@ class _MainNavScreenState extends State<MainNavScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isAppLocked) {
+      return AppLockScreen(
+        onUnlocked: () {
+          setState(() {
+            _isAppLocked = false;
+          });
+        },
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.ivory,
       body: IndexedStack(
