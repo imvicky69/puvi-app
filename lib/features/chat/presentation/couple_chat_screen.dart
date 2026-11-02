@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/services/couple_encryption_service.dart';
@@ -15,6 +16,7 @@ import 'widgets/chat_composer_bar.dart';
 import 'widgets/chat_date_separator.dart';
 import 'widgets/chat_emotion_bubble.dart';
 import 'widgets/chat_emotion_effects.dart';
+import 'widgets/chat_image_bubble.dart';
 import 'widgets/quick_emotion_drawer.dart';
 
 /// Private, intimate couple chat screen for Puja & Vicky.
@@ -151,6 +153,32 @@ class _CoupleChatScreenState extends State<CoupleChatScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Could not send voice memo: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  Future<void> _handleSendImage(File file, bool isHd, String caption) async {
+    if (_isSending) return;
+    setState(() => _isSending = true);
+
+    try {
+      await _repository.sendImage(
+        senderId: _myUid,
+        receiverId: _partnerUid,
+        imageFile: file,
+        isHd: isHd,
+        caption: caption,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not send photo: $e'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -650,6 +678,14 @@ class _CoupleChatScreenState extends State<CoupleChatScreen> {
                                 onLongPress: () =>
                                     _showMessageOptions(context, message),
                               );
+                            } else if (message.isImage) {
+                              bubbleWidget = ChatImageBubble(
+                                message: message,
+                                isMe: isMe,
+                                partnerName: _partnerName,
+                                onLongPress: () =>
+                                    _showMessageOptions(context, message),
+                              );
                             } else {
                               bubbleWidget = ChatBubble(
                                 message: message,
@@ -719,10 +755,11 @@ class _CoupleChatScreenState extends State<CoupleChatScreen> {
                 // 3. Quick Affection Bar (Kiss, Hug, Knife, Flower)
                 QuickEmotionDrawer(onSelectEmotion: _handleSendEmotion),
 
-                // 4. Message Composer Bar with Voice Note support
+                // 4. Message Composer Bar with Voice Note & Photo support
                 ChatComposerBar(
                   onSend: _handleSendText,
                   onSendVoiceNote: _handleSendVoiceNote,
+                  onSendImage: _handleSendImage,
                   isSending: _isSending,
                 ),
               ],

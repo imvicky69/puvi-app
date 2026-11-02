@@ -1,23 +1,28 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import 'send_photo_preview_dialog.dart';
 
 /// Stationery love letter input bar with text field, voice note recorder,
-/// and primary send actions.
+/// camera/gallery photo sender, and primary send actions.
 class ChatComposerBar extends StatefulWidget {
   final ValueChanged<String> onSend;
   final Function(String path, int durationSeconds) onSendVoiceNote;
+  final Function(File file, bool isHd, String caption)? onSendImage;
   final bool isSending;
 
   const ChatComposerBar({
     super.key,
     required this.onSend,
     required this.onSendVoiceNote,
+    this.onSendImage,
     this.isSending = false,
   });
 
@@ -158,6 +163,124 @@ class _ChatComposerBarState extends State<ChatComposerBar> {
     return '$m:$s';
   }
 
+  void _showAttachmentSourceSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.paper,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border(top: BorderSide(color: AppColors.border, width: 1.2)),
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              AppSpacing.verticalMd,
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(AppSpacing.xs),
+                  decoration: const BoxDecoration(
+                    color: AppColors.blushSand,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt_rounded,
+                    color: AppColors.burgundy,
+                    size: 20,
+                  ),
+                ),
+                title: Text(
+                  'Take a Photo',
+                  style: AppTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.espresso,
+                  ),
+                ),
+                subtitle: Text(
+                  'Capture an intimate live moment',
+                  style: AppTypography.captionSmall.copyWith(
+                    color: AppColors.taupe,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _pickAndPreviewImage(ImageSource.camera);
+                },
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(AppSpacing.xs),
+                  decoration: const BoxDecoration(
+                    color: AppColors.blushSand,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.photo_library_rounded,
+                    color: AppColors.burgundy,
+                    size: 20,
+                  ),
+                ),
+                title: Text(
+                  'Choose from Gallery',
+                  style: AppTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.espresso,
+                  ),
+                ),
+                subtitle: Text(
+                  'Share pictures in Normal or HD Raw quality',
+                  style: AppTypography.captionSmall.copyWith(
+                    color: AppColors.taupe,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _pickAndPreviewImage(ImageSource.gallery);
+                },
+              ),
+              AppSpacing.verticalSm,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndPreviewImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: source);
+      if (picked == null || !mounted) return;
+
+      final result = await SendPhotoPreviewDialog.show(
+        context,
+        imageFile: File(picked.path),
+      );
+
+      if (result != null && mounted) {
+        widget.onSendImage?.call(result.file, result.isHd, result.caption);
+      }
+    } catch (e) {
+      debugPrint('[ChatComposerBar] Error picking image: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -171,6 +294,33 @@ class _ChatComposerBarState extends State<ChatComposerBar> {
           : Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                // Camera / Attachment Action
+                Container(
+                  margin: const EdgeInsets.only(right: 6, bottom: 1),
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: AppColors.paper,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.border, width: 1.2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.espresso.withValues(alpha: 0.03),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.add_photo_alternate_outlined,
+                      size: 20,
+                      color: AppColors.espresso,
+                    ),
+                    onPressed: _showAttachmentSourceSheet,
+                  ),
+                ),
+
                 // Text Input Field in Stationery Paper Container
                 Expanded(
                   child: Container(

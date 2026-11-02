@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:puvi/core/services/fcm_token_service.dart';
+import 'package:puvi/core/services/notification_service.dart';
 
 void main() {
   group('FcmTokenService Tests', () {
@@ -48,5 +49,28 @@ void main() {
         );
       },
     );
+  });
+
+  group('NotificationService Tests', () {
+    test('Custom sound channel IDs are correctly configured', () {
+      expect(NotificationService.customSoundChannelId, 'custom_sound_channel');
+      expect(NotificationService.loveChannelId, 'puvi_love_channel_v2');
+      expect(NotificationService.chatChannelId, 'puvi_chat_v2');
+    });
+
+    test('initialize executes safely in test environment', () async {
+      await expectLater(NotificationService.initialize(), completes);
+    });
+
+    test('showNotification executes safely in test environment', () async {
+      await expectLater(
+        NotificationService.showNotification(
+          title: 'Love Shower',
+          body: 'Vicky showered you with love!',
+          channelId: NotificationService.customSoundChannelId,
+        ),
+        completes,
+      );
+    });
   });
 }

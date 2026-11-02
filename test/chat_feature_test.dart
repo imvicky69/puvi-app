@@ -170,5 +170,87 @@ void main() {
       expect(roundTrip.isEdited, isTrue);
       expect(roundTrip.editedAt?.toLocal().minute, equals(30));
     });
+
+    test(
+      'Correctly handles image photo message model and HD serialization',
+      () {
+        final imageMsg = ChatMessage(
+          id: 'img_1',
+          senderId: CoupleEncryptionService.vickyUid,
+          receiverId: CoupleEncryptionService.pujaUid,
+          type: ChatMessageType.image,
+          text: 'Look at this gorgeous sunset! 💕',
+          rawText: 'Look at this gorgeous sunset! 💕',
+          mediaUrl: 'https://puvi.local/sunset_hd.jpg',
+          isHd: true,
+          createdAt: DateTime(2026, 7, 4),
+        );
+
+        expect(imageMsg.isImage, isTrue);
+        expect(imageMsg.isHd, isTrue);
+        expect(imageMsg.emotionEmoji, equals('📷'));
+        expect(imageMsg.mediaUrl, contains('sunset_hd.jpg'));
+        expect(
+          imageMsg.emotionTitle(isMe: true, partnerName: 'Puja'),
+          contains('You sent a photo'),
+        );
+        expect(
+          imageMsg.emotionTitle(isMe: false, partnerName: 'Vicky'),
+          contains('Vicky sent you a photo'),
+        );
+
+        final map = imageMsg.toFirestore();
+        expect(map['type'], equals(ChatMessageType.image));
+        expect(map['isHd'], isTrue);
+        expect(map['mediaUrl'], equals(imageMsg.mediaUrl));
+
+        final roundTrip = ChatMessage.fromMap('img_1', map);
+        expect(roundTrip.isImage, isTrue);
+        expect(roundTrip.isHd, isTrue);
+        expect(roundTrip.mediaUrl, equals(imageMsg.mediaUrl));
+        expect(roundTrip.text, equals('Look at this gorgeous sunset! 💕'));
+      },
+    );
+
+    test(
+      'Correctly handles image photo message model and HD serialization',
+      () {
+        final imageMsg = ChatMessage(
+          id: 'img_1',
+          senderId: CoupleEncryptionService.vickyUid,
+          receiverId: CoupleEncryptionService.pujaUid,
+          type: ChatMessageType.image,
+          text: 'Look at this gorgeous sunset! 💕',
+          rawText: 'Look at this gorgeous sunset! 💕',
+          mediaUrl: 'https://puvi.local/sunset_hd.jpg',
+          isHd: true,
+          createdAt: DateTime(2026, 7, 4),
+        );
+
+        expect(imageMsg.isImage, isTrue);
+        expect(imageMsg.isHd, isTrue);
+        expect(imageMsg.emotionEmoji, equals('📷'));
+        expect(imageMsg.mediaUrl, contains('sunset_hd.jpg'));
+        expect(
+          imageMsg.emotionTitle(isMe: true, partnerName: 'Puja'),
+          contains('You sent a photo'),
+        );
+        expect(
+          imageMsg.emotionTitle(isMe: false, partnerName: 'Vicky'),
+          contains('Vicky sent you a photo'),
+        );
+
+        final map = imageMsg.toFirestore();
+        expect(map['type'], equals(ChatMessageType.image));
+        expect(map['isHd'], isTrue);
+        expect(map['mediaUrl'], equals(imageMsg.mediaUrl));
+
+        final roundTrip = ChatMessage.fromMap('img_1', map);
+        expect(roundTrip.isImage, isTrue);
+        expect(roundTrip.isHd, isTrue);
+        expect(roundTrip.mediaUrl, equals(imageMsg.mediaUrl));
+        expect(roundTrip.text, equals('Look at this gorgeous sunset! 💕'));
+      },
+    );
   });
 }

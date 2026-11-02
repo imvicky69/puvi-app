@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart' show WidgetsBinding;
 import 'love_stats_service.dart';
+import 'notification_service.dart';
 
 /// Service for safely managing and synchronizing FCM device tokens to Firestore.
 abstract final class FcmTokenService {
@@ -61,6 +62,7 @@ abstract final class FcmTokenService {
     }
 
     try {
+      NotificationService.initialize();
       final messaging = FirebaseMessaging.instance;
 
       // 3. Request permissions safely (iOS / Android 13+)
@@ -133,6 +135,7 @@ abstract final class FcmTokenService {
     _hasInitializedNotificationListeners = true;
 
     try {
+      NotificationService.initialize();
       final messaging = FirebaseMessaging.instance;
 
       // 1. App opened from background by tapping notification
@@ -150,6 +153,24 @@ abstract final class FcmTokenService {
       // 3. Foreground notification received
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         _handleLoveNotificationData(message.data);
+        final title =
+            message.notification?.title ?? message.data['title']?.toString();
+        final body =
+            message.notification?.body ?? message.data['body']?.toString();
+        if (title != null && title.isNotEmpty) {
+          final channelId =
+              message.data['channelId']?.toString() ??
+              message.notification?.android?.channelId ??
+              NotificationService.loveChannelId;
+          NotificationService.showNotification(
+            id:
+                message.messageId?.hashCode ??
+                DateTime.now().millisecondsSinceEpoch,
+            title: title,
+            body: body ?? '',
+            channelId: channelId,
+          );
+        }
       });
     } catch (e) {
       debugPrint(

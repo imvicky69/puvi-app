@@ -77,7 +77,7 @@ async function sendPushNotification({
   title,
   body,
   data = {},
-  channelId = 'puvi_love_channel',
+  channelId = 'puvi_love_channel_v2',
 }: {
   token: string;
   title: string;
@@ -94,15 +94,23 @@ async function sendPushNotification({
       },
       data: {
         click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        channelId,
         ...data,
       },
       android: {
         priority: 'high',
         notification: {
           channelId,
-          sound: 'default',
-          defaultSound: true,
+          sound: 'music',
+          defaultSound: false,
           defaultVibrateTimings: true,
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: 'music.caf',
+          },
         },
       },
       webpush: {
@@ -177,7 +185,7 @@ export const onMoodChange = functions.firestore
       title,
       body,
       data: { type: actionType },
-      channelId: 'puvi_love_channel',
+      channelId: 'puvi_love_channel_v2',
     });
 
     return null;
@@ -226,6 +234,10 @@ export const onNewMessage = functions.firestore
       title = `${senderName} sent you flowers! 🌸`;
       body = 'Open Our Space to watch them bloom 💕';
       actionType = 'flower';
+    } else if (data.type === 'image') {
+      title = `${senderName} sent a photo! 📷`;
+      body = data.text ? data.text : 'Tap to view the photo 💕';
+      actionType = 'photo';
     }
 
     await sendPushNotification({
@@ -236,7 +248,7 @@ export const onNewMessage = functions.firestore
         type: actionType,
         messageId: context.params.messageId,
       },
-      channelId: 'puvi_chat',
+      channelId: 'puvi_chat_v2',
     });
 
     return null;
@@ -279,7 +291,7 @@ export const onNewPing = functions.firestore
         type: 'ping',
         pingId: context.params.pingId,
       },
-      channelId: 'puvi_love_channel',
+      channelId: 'puvi_love_channel_v2',
     });
 
     return null;
@@ -335,7 +347,7 @@ export const onLoveCountUpdate = functions.firestore
         totalLoveCount: (newData.loveCount || 0).toString(),
         playMusic: isMegaShower.toString(),
       },
-      channelId: 'puvi_love_channel',
+      channelId: 'puvi_love_channel_v2',
     });
 
     return null;
@@ -401,7 +413,7 @@ async function handleLedgerNotification(
       type: actionType,
       entryId: entryId,
     },
-    channelId: 'puvi_ledger',
+    channelId: 'puvi_love_channel_v2',
   });
 
   return null;

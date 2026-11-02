@@ -6,6 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart' show WidgetsBinding;
 import '../../../../core/services/couple_encryption_service.dart';
+import 'chat_media_service.dart';
 import 'chat_message.dart';
 
 /// Repository managing real-time Firestore communication, End-to-End Encryption,
@@ -85,6 +86,7 @@ class ChatRepository {
     String text = '',
     String? mediaUrl,
     int durationSeconds = 0,
+    bool isHd = false,
     String coupleId = CoupleEncryptionService.coupleId,
   }) async {
     // 1. Ensure encryption master key is loaded
@@ -100,6 +102,7 @@ class ChatRepository {
       rawText: text,
       mediaUrl: mediaUrl,
       durationSeconds: durationSeconds,
+      isHd: isHd,
       createdAt: DateTime.now(),
       isSeen: false,
       isEncrypted: text.isNotEmpty,
@@ -158,6 +161,55 @@ class ChatRepository {
       text: '',
       mediaUrl: mediaUrl,
       durationSeconds: durationSeconds,
+      coupleId: coupleId,
+    );
+  }
+
+  /// Compresses (if standard mode) or preserves raw (if HD), uploads to Firebase Storage,
+  /// and sends a new photo message in the encrypted couple chat.
+  Future<void> sendImage({
+    required String senderId,
+    required String receiverId,
+    required File imageFile,
+    bool isHd = false,
+    String caption = '',
+    String coupleId = CoupleEncryptionService.coupleId,
+  }) async {
+    final file = await ChatMediaService.prepareImageFile(imageFile, isHd: isHd);
+    if (!await file.exists()) {
+      throw Exception('Image file not found at ${file.path}');
+    }
+
+    String mediaUrl = '';
+
+    if (!_isTesting && Firebase.apps.isNotEmpty) {
+      final ext = file.path.toLowerCase().endsWith('.png') ? '.png' : '.jpg';
+      final fileName =
+          'img_${DateTime.now().millisecondsSinceEpoch}_${isHd ? 'hd' : 'std'}_$senderId$ext';
+      final storageRef = _storage
+          .ref()
+          .child('chat')
+          .child('images')
+          .child(fileName);
+
+      final uploadTask = await storageRef.putFile(
+        file,
+        SettableMetadata(
+          contentType: ext == '.png' ? 'image/png' : 'image/jpeg',
+        ),
+      );
+      mediaUrl = await uploadTask.ref.getDownloadURL();
+    } else {
+      mediaUrl = 'https://puvi.local/test_image.jpg';
+    }
+
+    await sendMessage(
+      senderId: senderId,
+      receiverId: receiverId,
+      type: ChatMessageType.image,
+      text: caption,
+      mediaUrl: mediaUrl,
+      isHd: isHd,
       coupleId: coupleId,
     );
   }

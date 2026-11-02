@@ -9,10 +9,11 @@ abstract final class ChatMessageType {
   static const String knife = 'knife';
   static const String flower = 'flower';
   static const String audio = 'audio';
+  static const String image = 'image';
 }
 
 /// Representation of a single encrypted couple chat message, dramatic emotion,
-/// or voice note memo.
+/// voice note memo, or cherished photo.
 class ChatMessage {
   final String id;
   final String coupleId;
@@ -23,6 +24,7 @@ class ChatMessage {
   final String rawText;
   final String? mediaUrl;
   final int durationSeconds;
+  final bool isHd;
   final DateTime createdAt;
   final bool isSeen;
   final bool isEncrypted;
@@ -39,6 +41,7 @@ class ChatMessage {
     required this.rawText,
     this.mediaUrl,
     this.durationSeconds = 0,
+    this.isHd = false,
     required this.createdAt,
     this.isSeen = false,
     this.isEncrypted = true,
@@ -51,6 +54,7 @@ class ChatMessage {
   bool get isKnife => type == ChatMessageType.knife;
   bool get isFlower => type == ChatMessageType.flower;
   bool get isAudio => type == ChatMessageType.audio;
+  bool get isImage => type == ChatMessageType.image;
   bool get isEmotion => isKiss || isHug || isKnife || isFlower;
 
   /// Returns the corresponding expressive emoji for this message type.
@@ -66,6 +70,8 @@ class ChatMessage {
         return '🌸';
       case ChatMessageType.audio:
         return '🎙️';
+      case ChatMessageType.image:
+        return '📷';
       default:
         return '✉️';
     }
@@ -89,6 +95,8 @@ class ChatMessage {
         return isMe
             ? 'You sent a voice memo 🎙️'
             : '$subject sent you a voice memo 🎙️';
+      case ChatMessageType.image:
+        return isMe ? 'You sent a photo 📷' : '$subject sent you a photo 📷';
       default:
         return '$subject sent a note';
     }
@@ -145,6 +153,7 @@ class ChatMessage {
         (data['durationSeconds'] as num?)?.toInt() ??
         (data['duration'] as num?)?.toInt() ??
         0;
+    final isHd = data['isHd'] == true;
 
     return ChatMessage(
       id: id,
@@ -157,6 +166,7 @@ class ChatMessage {
       rawText: rawText,
       mediaUrl: mediaUrl,
       durationSeconds: durationSeconds,
+      isHd: isHd,
       createdAt: parsedDate,
       isSeen: data['isSeen'] == true,
       isEncrypted: isEncrypted,
@@ -187,6 +197,10 @@ class ChatMessage {
       map['durationSeconds'] = durationSeconds;
     }
 
+    if (isImage) {
+      map['isHd'] = isHd;
+    }
+
     if (isEdited) {
       map['isEdited'] = true;
       if (editedAt != null) {
@@ -207,6 +221,7 @@ class ChatMessage {
     String? rawText,
     String? mediaUrl,
     int? durationSeconds,
+    bool? isHd,
     DateTime? createdAt,
     bool? isSeen,
     bool? isEncrypted,
@@ -223,6 +238,7 @@ class ChatMessage {
       rawText: rawText ?? this.rawText,
       mediaUrl: mediaUrl ?? this.mediaUrl,
       durationSeconds: durationSeconds ?? this.durationSeconds,
+      isHd: isHd ?? this.isHd,
       createdAt: createdAt ?? this.createdAt,
       isSeen: isSeen ?? this.isSeen,
       isEncrypted: isEncrypted ?? this.isEncrypted,

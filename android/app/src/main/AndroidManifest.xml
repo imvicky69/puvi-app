@@ -21,7 +21,7 @@
             android:value="true" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="puvi_love_channel" />
+            android:value="puvi_love_channel_v2" />
 
         <activity
             android:name=".MainActivity"

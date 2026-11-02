@@ -57,6 +57,10 @@ async function getPartnerRecipient(senderIdOrName) {
                 docName === normalizedSender ||
                 docEmail.includes(normalizedSender));
         const token = data.fcmToken || data.token;
+        // Respect recipient's notifications toggle
+        if (data.notificationsEnabled === false) {
+            continue;
+        }
         if (!isSender && token) {
             return {
                 userId: doc.id,
@@ -68,6 +72,9 @@ async function getPartnerRecipient(senderIdOrName) {
     // 2. Fallback: If sender couldn't be determined, pick any user with an active token
     for (const doc of usersSnap.docs) {
         const data = doc.data();
+        if (data.notificationsEnabled === false) {
+            continue;
+        }
         const token = data.fcmToken || data.token;
         if (token) {
             return {
@@ -82,7 +89,7 @@ async function getPartnerRecipient(senderIdOrName) {
 /**
  * Sends a high-priority push notification compatible with both Android (Flutter) and Web.
  */
-async function sendPushNotification({ token, title, body, data = {}, channelId = 'puvi_love_channel', }) {
+async function sendPushNotification({ token, title, body, data = {}, channelId = 'puvi_love_channel_v2', }) {
     try {
         await admin.messaging().send({
             token,
@@ -90,14 +97,21 @@ async function sendPushNotification({ token, title, body, data = {}, channelId =
                 title,
                 body,
             },
-            data: Object.assign({ click_action: 'FLUTTER_NOTIFICATION_CLICK' }, data),
+            data: Object.assign({ click_action: 'FLUTTER_NOTIFICATION_CLICK', channelId }, data),
             android: {
                 priority: 'high',
                 notification: {
                     channelId,
-                    sound: 'default',
-                    defaultSound: true,
+                    sound: 'music',
+                    defaultSound: false,
                     defaultVibrateTimings: true,
+                },
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        sound: 'music.caf',
+                    },
                 },
             },
             webpush: {
@@ -171,7 +185,7 @@ exports.onMoodChange = functions.firestore
         title,
         body,
         data: { type: actionType },
-        channelId: 'puvi_love_channel',
+        channelId: 'puvi_love_channel_v2',
     });
     return null;
 });
@@ -218,6 +232,11 @@ exports.onNewMessage = functions.firestore
         body = 'Open Our Space to watch them bloom 💕';
         actionType = 'flower';
     }
+    else if (data.type === 'image') {
+        title = `${senderName} sent a photo! 📷`;
+        body = data.text ? data.text : 'Tap to view the photo 💕';
+        actionType = 'photo';
+    }
     await sendPushNotification({
         token: recipient.fcmToken,
         title,
@@ -226,7 +245,7 @@ exports.onNewMessage = functions.firestore
             type: actionType,
             messageId: context.params.messageId,
         },
-        channelId: 'puvi_chat',
+        channelId: 'puvi_chat_v2',
     });
     return null;
 });
@@ -263,7 +282,7 @@ exports.onNewPing = functions.firestore
             type: 'ping',
             pingId: context.params.pingId,
         },
-        channelId: 'puvi_love_channel',
+        channelId: 'puvi_love_channel_v2',
     });
     return null;
 });
@@ -313,7 +332,7 @@ exports.onLoveCountUpdate = functions.firestore
             totalLoveCount: (newData.loveCount || 0).toString(),
             playMusic: isMegaShower.toString(),
         },
-        channelId: 'puvi_love_channel',
+        channelId: 'puvi_love_channel_v2',
     });
     return null;
 });
@@ -371,7 +390,7 @@ async function handleLedgerNotification(data, entryId) {
             type: actionType,
             entryId: entryId,
         },
-        channelId: 'puvi_ledger',
+        channelId: 'puvi_love_channel_v2',
     });
     return null;
 }
