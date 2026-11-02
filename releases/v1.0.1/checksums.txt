@@ -1,0 +1,4 @@
+3c2a7bff399dba5e3f30b85b4380ee0bfed4c238d8689a5eee75b1d1ffe27724  puvi-v1.0.1-arm64-v8a.apk  (27M)
+9000e9d92582dac27b86ab4ee4438ea915761c96632daea8af7485fee265497c  puvi-v1.0.1-armeabi-v7a.apk  (24M)
+067fc36d40dcfeab3d311ab597feb8099793b89c6186209868dc47fbaa0309e1  puvi-v1.0.1-x86_64.apk  (28M)
+fd5011fdebb4c641d77fe680dd5da9ad71e8dcc7921f8ccdc79d13c6e1b6b193  puvi-v1.0.1-universal.apk  (63M)
